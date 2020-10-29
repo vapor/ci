@@ -15,14 +15,10 @@
   ````
   
   * `ubuntu-latest` entries _must_ have `null` as the value of `toolchain`. The `image` key specifies a Docker image to use as the container for the tests.
-  * `macos-latest` entries, similarly, _must_ have `null` as the value of `image`. The `toolchain` key specifies an Xcode version to use for the tests, as understood by the action specified by the `setup-xcode-action.txt` file (see below).
+  * `macos-latest` entries, similarly, _must_ have `null` as the value of `image`. The `toolchain` key specifies an Xcode version to use for the tests, as understood by the `maxim-lobanov/setup-xcode` action, version 1.2.1 or newer.
   * `windows-latest` entries must have `null` as the value of both keys. This is defined only for the sake of future expansion at the time of this writing, and no Windows entries may actually appear until updates to CI are put in place.
   * There may be as many entries as desired, but be aware that every entry adds another CI check to _every_ pull request against _every_ Vapor repository. Duplicate entries are invalid.
 
-- `/setup-xcode-action.txt`
-  
-  The content of this file is the name of a GitHub Actions action, in the form of a value for the `jobs.<job_id>.steps.uses` key in a workflow, such as `actions/checkout@v2`. This is used to make it simpler to update our usage of the `maxim-lobanov/setup-xcode` action, or to replace it if it becomes necessary to do so.
- 
  - `/validity-check.sh`
    
    A script which checks the other files in the repository for validity. It is invoked by this repository's own CI, which does not otherwise reference its own content.

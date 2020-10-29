@@ -1,1 +1,0 @@
-maxim-lobanov/setup-xcode@v1.2.1
