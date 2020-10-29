@@ -1,0 +1,13 @@
+name: Validate
+on:
+  push:
+  pull_request:
+
+jobs:
+  check-validity:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout content
+        uses: actions/checkout@v2
+      - name: Check validity
+        run: ./validity-check.sh
