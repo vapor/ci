@@ -21,19 +21,18 @@ runs:
   using: "composite"
   steps:
     - id: unit-test-swift-versions-impl
-      run: echo "::set-output name=data::UNIMPLEMENTED"
+      run: |
+        if [[ '${{ inputs.command }}' == 'unit-test-swift-versions' ]]; then echo "::set-output name=data::UNIMPLEMENTED"; fi
       shell: bash
-      if: ${{ inputs.command == 'unit-test-swift-versions' }}
     - id: unit-test-swift-runners-impl
-      run: echo "::set-output name=data::UNIMPLEMENTED"
+      run: |
+        if [[ '${{ inputs.command }}' == 'unit-test-swift-runners' ]]; then echo "::set-output name=data::UNIMPLEMENTED"; fi
       shell: bash
-      if: ${{ inputs.command == 'unit-test-swift-runners' }}
     - id: integration-test-swift-versions-impl
-      run: echo "::set-output name=data::UNIMPLEMENTED"
+      run: |
+        if [[ '${{ inputs.command }}' == 'integration-test-swift-versions' ]]; then echo "::set-output name=data::UNIMPLEMENTED"; fi
       shell: bash
-      if: ${{ inputs.command == 'integration-test-swift-versions' }}
     - id: integration-test-swift-runners-impl
-      run: echo "::set-output name=data::UNIMPLEMENTED"
+      run: |
+        if [[ '${{ inputs.command }}' == 'integration-test-swift-runners' ]]; then echo "::set-output name=data::UNIMPLEMENTED"; fi
       shell: bash
-      if: ${{ inputs.command == 'integration-test-swift-runners' }}
-
