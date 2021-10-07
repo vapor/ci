@@ -2,6 +2,7 @@
     { "os": "ubuntu-latest", "image": "swift:5.2-focal", "toolchain": null },
     { "os": "ubuntu-latest", "image": "swift:5.3-focal", "toolchain": null },
     { "os": "ubuntu-latest", "image": "swift:5.4-focal", "toolchain": null },
+    { "os": "ubuntu-latest", "image": "swift:5.5-focal", "toolchain": null },
     { "os": "macos-latest", "image": null, "toolchain": "latest-stable" },
     { "os": "macos-latest", "image": null, "toolchain": "latest" }
 ]
