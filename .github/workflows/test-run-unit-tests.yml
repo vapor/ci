@@ -1,20 +1,20 @@
 name: Test of reusable workflow
 
 on:
-  pull_request:
-    paths:
-      - '.github/workflows/run-unit-tests.yml'
-  push:
-    branches:
-      - main
-    paths:
-      - '.github/workflows/run-unit-tests.yml'
+#  pull_request:
+#    paths:
+#      - '.github/workflows/run-unit-tests.yml'
+#  push:
+#    branches:
+#      - main
+#    paths:
+#      - '.github/workflows/run-unit-tests.yml'
   workflow_dispatch:
-
+      
 jobs:
 
   test-workflow-all_params:
-    uses: vapor/ci/.github/workflows/run-unit-tests.yml@HEAD
+    uses: vapor/ci/.github/workflows/run-unit-tests.yml@vTEST
     with:
       subpath: sample-testable-package
       with_coverage: false
@@ -27,34 +27,34 @@ jobs:
       extra_flags_windows: '--verbose'
 
   test-workflow-cov_tsan:
-    uses: vapor/ci/.github/workflows/run-unit-tests.yml@HEAD
+    uses: vapor/ci/.github/workflows/run-unit-tests.yml@vTEST
     with:
       subpath: sample-testable-package
       with_coverage: true
       with_tsan: true
 
   test-workflow-cov:
-    uses: vapor/ci/.github/workflows/run-unit-tests.yml@HEAD
+    uses: vapor/ci/.github/workflows/run-unit-tests.yml@vTEST
     with:
       subpath: sample-testable-package
       with_coverage: true
       with_tsan: false
 
   test-workflow-tsan:
-    uses: vapor/ci/.github/workflows/run-unit-tests.yml@HEAD
+    uses: vapor/ci/.github/workflows/run-unit-tests.yml@vTEST
     with:
       subpath: sample-testable-package
       with_coverage: false
       with_tsan: true
 
   test-workflow-plain:
-    uses: vapor/ci/.github/workflows/run-unit-tests.yml@HEAD
+    uses: vapor/ci/.github/workflows/run-unit-tests.yml@vTEST
     with:
       subpath: sample-testable-package
       with_coverage: false
       with_tsan: false
 
   test-workflow-defaults:
-    uses: vapor/ci/.github/workflows/run-unit-tests.yml@HEAD
+    uses: vapor/ci/.github/workflows/run-unit-tests.yml@vTEST
     with:
       subpath: sample-testable-package
