@@ -1,0 +1,11 @@
+name: Test of reusable workflow
+
+on:
+  workflow_dispatch:
+      
+jobs:
+
+  just_to_have_something_here:
+    runs-on: ubuntu-latest
+    steps:
+      - run: true
