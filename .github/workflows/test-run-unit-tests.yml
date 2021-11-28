@@ -14,7 +14,7 @@ on:
 jobs:
 
   test-workflow-all_params:
-    uses: ${{ format('vapor/ci/run-unit-tests.yml@{0}', github.ref_name) }}
+    uses: vapor/ci/.github/workflows/run-unit-tests.yml@HEAD
     with:
       subpath: sample-testable-package
       with_coverage: false
@@ -27,34 +27,34 @@ jobs:
       extra_flags_windows: '--verbose'
 
   test-workflow-cov_tsan:
-    uses: ${{ format('vapor/ci/run-unit-tests.yml@{0}', github.ref_name) }}
+    uses: vapor/ci/.github/workflows/run-unit-tests.yml@HEAD
     with:
       subpath: sample-testable-package
       with_coverage: true
       with_tsan: true
 
   test-workflow-cov:
-    uses: ${{ format('vapor/ci/run-unit-tests.yml@{0}', github.ref_name) }}
+    uses: vapor/ci/.github/workflows/run-unit-tests.yml@HEAD
     with:
       subpath: sample-testable-package
       with_coverage: true
       with_tsan: false
 
   test-workflow-tsan:
-    uses: ${{ format('vapor/ci/run-unit-tests.yml@{0}', github.ref_name) }}
+    uses: vapor/ci/.github/workflows/run-unit-tests.yml@HEAD
     with:
       subpath: sample-testable-package
       with_coverage: false
       with_tsan: true
 
   test-workflow-plain:
-    uses: ${{ format('vapor/ci/run-unit-tests.yml@{0}', github.ref_name) }}
+    uses: vapor/ci/.github/workflows/run-unit-tests.yml@HEAD
     with:
       subpath: sample-testable-package
       with_coverage: false
       with_tsan: false
 
   test-workflow-defaults:
-    uses: ${{ format('vapor/ci/run-unit-tests.yml@{0}', github.ref_name) }}
+    uses: vapor/ci/.github/workflows/run-unit-tests.yml@HEAD
     with:
       subpath: sample-testable-package
