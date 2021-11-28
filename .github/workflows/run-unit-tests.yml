@@ -23,6 +23,31 @@ on:
         required: false
         default: ''
         description: "Apply a --skip filter to the tests that will be run."
+      subpath:
+        type: string
+        required: false
+        default: ''
+        description: "Run tests and upload coverage from a subpath of the repository. Used for testing the workflow."
+      extra_flags:
+        type: string
+        required: false
+        default: ''
+        description: "Additional 'swift test' flags to be applied on when testing on all platforms."
+      extra_flags_linux:
+        type: string
+        required: false
+        default: ''
+        description: "Additional 'swift test' flags to be applied only when testing on Linux."
+      extra_flags_macos:
+        type: string
+        required: false
+        default: ''
+        description: "Additional 'swift test' flags to be applied only when testing on macOS."
+      extra_flags_windows:
+        type: string
+        required: false
+        default: ''
+        description: "Additional 'swift test' flags to be applied only when testing on Windows."
 
 jobs:
 
@@ -50,7 +75,12 @@ jobs:
           san=$([[ '${{ format('{0}', inputs.with_tsan) }} == 'true' ]] && echo '--sanitize=thread' || true)
           flt=$([[ -n '${{ inputs.test_filter }}' && echo '--filter=${{ inputs.test_filter }}' || true)
           skp=$([[ -n '${{ inputs.test_skip }}' && echo '--skip=${{ inputs.test_skip }}' || true)
-          swift test --enable-test-discovery ${cov} ${san} ${flt} ${skp}
+          pth=$([[ -n '${{ inputs.subpath }}']] && echo '--package-path ${{ inputs.subpath }}' || true)
+          swift test ${pth} \
+            ${cov} ${san} \
+            ${flt} ${skp} \
+            ${{ inputs.extra_flags }} ${{ inputs.extra_flags_linux }} \
+            --enable-test-discovery
       - name: Upload code coverage when present
         if: ${{ inputs.with_coverage }}
         uses: vapor/swift-codecov-action@v0.1.1
@@ -85,7 +115,12 @@ jobs:
           san=$([[ '${{ format('{0}', inputs.with_tsan) }} == 'true' ]] && echo '--sanitize=thread' || true)
           flt=$([[ -n '${{ inputs.test_filter }}' && echo '--filter=${{ inputs.test_filter }}' || true)
           skp=$([[ -n '${{ inputs.test_skip }}' && echo '--skip=${{ inputs.test_skip }}' || true)
-          swift test --enable-test-discovery ${cov} ${san} ${flt} ${skp} ${{ matrix.extra_flags }}
+          pth=$([[ -n '${{ inputs.subpath }}']] && echo '--package-path ${{ inputs.subpath }}' || true)
+          swift test ${pth} \
+            ${cov} ${san} \
+            ${flt} ${skp} \
+            ${{ inputs.extra_flags }} ${{ inputs.extra_flags_macos }} ${{ matrix.extra_flags }} \
+            --enable-test-discovery
       - name: Upload code coverage when present
         if: ${{ inputs.with_coverage }}
         uses: vapor/swift-codecov-action@v0.1.1
@@ -126,7 +161,12 @@ jobs:
           san=$([[ '${{ format('{0}', inputs.with_tsan) }} == 'true' ]] && echo '--sanitize=thread' || true)
           flt=$([[ -n '${{ inputs.test_filter }}' && echo '--filter=${{ inputs.test_filter }}' || true)
           skp=$([[ -n '${{ inputs.test_skip }}' && echo '--skip=${{ inputs.test_skip }}' || true)
-          swift test --enable-test-discovery ${cov} ${san} ${flt} ${skp}
+          pth=$([[ -n '${{ inputs.subpath }}']] && echo '--package-path ${{ inputs.subpath }}' || true)
+          swift test ${pth} \
+            ${cov} ${san} \
+            ${flt} ${skp} \
+            ${{ inputs.extra_flags }} ${{ inputs.extra_flags_windows }} \
+            --enable-test-discovery
       - name: Upload code coverage when present
         if: ${{ inputs.with_coverage }}
         uses: vapor/swift-codecov-action@v0.1.1
