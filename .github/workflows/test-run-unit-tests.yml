@@ -20,7 +20,6 @@ jobs:
       with_coverage: false
       with_tsan: false
       test_filter: '^S'
-      test_skip: '^Z'
       extra_flags: '-c debug'
       extra_flags_linux: '--netrc-optional'
       extra_flags_macos: '--disable-sandbox'

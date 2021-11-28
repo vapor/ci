@@ -18,11 +18,6 @@ on:
         required: false
         default: ''
         description: "Apply a --filter to the tests that will be run."
-      test_skip:
-        type: string
-        required: false
-        default: ''
-        description: "Apply a --skip filter to the tests that will be run."
       subpath:
         type: string
         required: false
