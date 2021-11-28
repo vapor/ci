@@ -73,8 +73,8 @@ jobs:
         run: |
           cov=$([[ '${{ format('{0}', inputs.with_coverage) }}' == 'true' ]] && echo '--enable-code-coverage' || true)
           san=$([[ '${{ format('{0}', inputs.with_tsan) }}' == 'true' ]] && echo '--sanitize=thread' || true)
-          flt=$([[ -n '${{ inputs.test_filter }}' && echo '--filter=${{ inputs.test_filter }}' || true)
-          skp=$([[ -n '${{ inputs.test_skip }}' && echo '--skip=${{ inputs.test_skip }}' || true)
+          flt=$([[ -n '${{ inputs.test_filter }}' ]] && echo '--filter=${{ inputs.test_filter }}' || true)
+          skp=$([[ -n '${{ inputs.test_skip }}' ]] && echo '--skip=${{ inputs.test_skip }}' || true)
           pth=$([[ -n '${{ inputs.subpath }}' ]] && echo '--package-path ${{ inputs.subpath }}' || true)
           swift test ${pth} \
             ${cov} ${san} \
@@ -113,8 +113,8 @@ jobs:
         run: |
           cov=$([[ '${{ format('{0}', inputs.with_coverage) }}' == 'true' ]] && echo '--enable-code-coverage' || true)
           san=$([[ '${{ format('{0}', inputs.with_tsan) }}' == 'true' ]] && echo '--sanitize=thread' || true)
-          flt=$([[ -n '${{ inputs.test_filter }}' && echo '--filter=${{ inputs.test_filter }}' || true)
-          skp=$([[ -n '${{ inputs.test_skip }}' && echo '--skip=${{ inputs.test_skip }}' || true)
+          flt=$([[ -n '${{ inputs.test_filter }}' ]] && echo '--filter=${{ inputs.test_filter }}' || true)
+          skp=$([[ -n '${{ inputs.test_skip }}' ]] && echo '--skip=${{ inputs.test_skip }}' || true)
           pth=$([[ -n '${{ inputs.subpath }}' ]] && echo '--package-path ${{ inputs.subpath }}' || true)
           swift test ${pth} \
             ${cov} ${san} \
@@ -159,8 +159,8 @@ jobs:
         run: |
           cov=$([[ '${{ format('{0}', inputs.with_coverage) }}' == 'true' ]] && echo '--enable-code-coverage' || true)
           san=$([[ '${{ format('{0}', inputs.with_tsan) }}' == 'true' ]] && echo '--sanitize=thread' || true)
-          flt=$([[ -n '${{ inputs.test_filter }}' && echo '--filter=${{ inputs.test_filter }}' || true)
-          skp=$([[ -n '${{ inputs.test_skip }}' && echo '--skip=${{ inputs.test_skip }}' || true)
+          flt=$([[ -n '${{ inputs.test_filter }}' ]] && echo '--filter=${{ inputs.test_filter }}' || true)
+          skp=$([[ -n '${{ inputs.test_skip }}' ]] && echo '--skip=${{ inputs.test_skip }}' || true)
           pth=$([[ -n '${{ inputs.subpath }}' ]] && echo '--package-path ${{ inputs.subpath }}' || true)
           swift test ${pth} \
             ${cov} ${san} \
