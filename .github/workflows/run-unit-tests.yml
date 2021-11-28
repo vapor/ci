@@ -80,6 +80,7 @@ jobs:
         if: ${{ inputs.with_coverage }}
         uses: vapor/swift-codecov-action@v0.1.1
         with:
+          package_path: ${{ inputs.subpath }}
           cc_flags: 'unittests'
           cc_env_vars: 'SWIFT_VERSION,SWIFT_PLATFORM,RUNNER_OS,RUNNER_ARCH'
           cc_fail_ci_if_error: true
@@ -120,6 +121,7 @@ jobs:
         if: ${{ inputs.with_coverage }}
         uses: vapor/swift-codecov-action@v0.1.1
         with:
+          package_path: ${{ inputs.subpath }}
           cc_flags: 'unittests'
           cc_env_vars: 'MD_APPLE_SDK_ROOT,RUNNER_OS,RUNNER_ARCH'
           cc_fail_ci_if_error: true
@@ -166,6 +168,7 @@ jobs:
         if: ${{ inputs.with_coverage }}
         uses: vapor/swift-codecov-action@v0.1.1
         with:
+          package_path: ${{ inputs.subpath }}
           cc_flags: 'unittests'
           cc_env_vars: 'SWIFT_VERSION,RUNNER_OS,RUNNER_ARCH'
           cc_fail_ci_if_error: true
