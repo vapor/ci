@@ -21,7 +21,7 @@ jobs:
       with_tsan: false
       test_filter: '^S'
       extra_flags: '-c debug'
-      extra_flags_linux: '--netrc-optional'
+      extra_flags_linux: '--build-path .build'
       extra_flags_macos: '--disable-sandbox'
       extra_flags_windows: '--verbose'
 
