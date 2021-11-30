@@ -65,6 +65,8 @@ jobs:
         uses: actions/checkout@v2
       - name: Run unit tests
         shell: bash
+        env:
+          SWIFT_DETERMINISTIC_HASHING: 1
         run: |
           cov=$([[ '${{ format('{0}', inputs.with_coverage) }}' == 'true' ]] && echo '--enable-code-coverage' || true)
           san=$([[ '${{ format('{0}', inputs.with_tsan) }}' == 'true' ]] && echo '--sanitize=thread' || true)
