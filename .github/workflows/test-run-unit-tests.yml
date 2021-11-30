@@ -19,6 +19,7 @@ jobs:
       subpath: sample-testable-package
       with_coverage: false
       with_tsan: false
+      coverage_ignores: '/Tests/|/Sources/SampleTestablePackageBenchmark/'
       test_filter: '^S'
       extra_flags: '-c debug'
       extra_flags_linux: '--build-path .build'
@@ -30,6 +31,7 @@ jobs:
     with:
       subpath: sample-testable-package
       with_coverage: true
+      coverage_ignores: '/Tests/|/Sources/SampleTestablePackageBenchmark/'
       with_tsan: true
 
   test-workflow-cov:
@@ -37,6 +39,7 @@ jobs:
     with:
       subpath: sample-testable-package
       with_coverage: true
+      coverage_ignores: '/Tests/|/Sources/SampleTestablePackageBenchmark/'
       with_tsan: false
 
   test-workflow-tsan:
