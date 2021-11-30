@@ -23,6 +23,11 @@ on:
         required: false
         default: ''
         description: "Run tests and upload coverage from a subpath of the repository. Used for testing the workflow."
+      coverage_ignores:
+        type: string
+        required: false
+        default: '/Tests/'
+        description: "Additional source-relative paths to ignore when generating code coverage reports."
       extra_flags:
         type: string
         required: false
@@ -80,9 +85,10 @@ jobs:
             --enable-test-discovery
       - name: Upload code coverage when present
         if: ${{ inputs.with_coverage }}
-        uses: vapor/swift-codecov-action@v0.1.1
+        uses: vapor/swift-codecov-action@v0.2
         with:
           package_path: ${{ inputs.subpath }}
+          ignore_paths: ${{ inputs.coverage_ignores }}
           cc_flags: 'unittests'
           cc_env_vars: 'SWIFT_VERSION,SWIFT_PLATFORM,RUNNER_OS,RUNNER_ARCH'
           cc_fail_ci_if_error: true
@@ -121,9 +127,10 @@ jobs:
             --enable-test-discovery
       - name: Upload code coverage when present
         if: ${{ inputs.with_coverage }}
-        uses: vapor/swift-codecov-action@v0.1.1
+        uses: vapor/swift-codecov-action@v0.2
         with:
           package_path: ${{ inputs.subpath }}
+          ignore_paths: ${{ inputs.coverage_ignores }}
           cc_flags: 'unittests'
           cc_env_vars: 'MD_APPLE_SDK_ROOT,RUNNER_OS,RUNNER_ARCH'
           cc_fail_ci_if_error: true
@@ -168,9 +175,10 @@ jobs:
             --enable-test-discovery
       - name: Upload code coverage when present
         if: ${{ inputs.with_coverage }}
-        uses: vapor/swift-codecov-action@v0.1.1
+        uses: vapor/swift-codecov-action@v0.2
         with:
           package_path: ${{ inputs.subpath }}
+          ignore_paths: ${{ inputs.coverage_ignores }}
           cc_flags: 'unittests'
           cc_env_vars: 'SWIFT_VERSION,RUNNER_OS,RUNNER_ARCH'
           cc_fail_ci_if_error: true
