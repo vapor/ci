@@ -1,4 +1,4 @@
-name: Test of reusable workflow
+name: Test of reusable workflow (API breakage)
 
 on:
 #  pull_request:
@@ -17,6 +17,6 @@ jobs:
     uses: vapor/ci/.github/workflows/check-api-breakage.yml@vTEST
     with:
       subpath: sample-testable-package
-      baseline_ref: origin/api-breakage-check
+      baseline_ref: origin/reusable-workflows
       allowlist_path: '.swift-allowed-api-breakage'
       extra_flags: '--regenerate-baseline'

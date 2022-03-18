@@ -1,4 +1,4 @@
-name: Test of reusable workflow
+name: Test of reusable workflow (unit tests)
 
 on:
 #  pull_request:
