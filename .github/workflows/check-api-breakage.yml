@@ -1,0 +1,50 @@
+name: Perform API breakage checks
+
+on:
+  workflow_call:
+    inputs:
+      baseline_ref:
+        type: string
+        required: false
+        default: 'origin/main'
+        description: "A git ref to use as the baseline API"
+      allowlist_path:
+        type: string
+        required: false
+        default: ''
+        description: "A repo-relative path containing API breakage diagnostics to be ignored"
+      no_cache:
+        type: boolean
+        required: false
+        default: true
+        description: "Always regenerate the API baselines (currently ignored, proper caching is unimplemented)"
+      extra_flags:
+        type: string
+        required: false
+        default: ''
+        description: "Additional 'swift package diagnose-api-breaking-changes' flags."
+      subpath:
+        type: string
+        required: false
+        default: ''
+        description: "Run the API check from a subpath of the repository. Used for testing the workflow."
+
+jobs:
+  check-api-breakage:
+    runs-on: ubuntu-latest
+    container: swift:5.6-focal
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      # TODO: Use actions/cache and --baseline-dir to cache baselines. Not implemented yet because it gets
+      #       complicated to make sure the cache is cleared when the baseline ref changes.
+      - name: Check API breakage
+        shell: bash
+        run: |
+          alw=$([[ -n '${{ inputs.allowlist_path }}' ]] && echo '--breakage-allowlist-path ${{ inputs.allowlist_path }}' || true)
+          pth=$([[ -n '${{ inputs.subpath }}' ]] && echo '--package-path ${{ inputs.subpath }}' || true)
+          swift package diagnose-api-breaking-changes ${pth} \
+            --regenerate-baseline ${alw} \
+            ${{inputs.extra_flags}} ${{inputs.baseline_ref}}
