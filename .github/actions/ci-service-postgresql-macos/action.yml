@@ -1,0 +1,85 @@
+name: Deploy CI PostgreSQL service for macOS
+description: As necessary, installs, configures, and starts a locally accessible PostgreSQL server for use by a CI workflow. Runs only on macOS runners.
+
+inputs:
+  pgversion:
+    description: "The major version of PostgreSQL to install. Defaults to 'latest'."
+    required: false
+    default: 'latest'
+  pgauthmethod:
+    description: "The auth method to use for PostgreSQL login. Defaults to 'scram-sha-256'."
+    required: false
+    default: 'scram-sha-256'
+  database:
+    description: "The name to use for the initially created database. Defaults to 'test'."
+    required: false
+    default: 'test'
+  username:
+    description: "The username of a user to serve as the owner of the default and initial databases. Defaults to 'testuser'."
+    required: false
+    default: 'testuser'
+  password:
+    description: "The password for the owning user. May be omitted when using 'trust' auth. Defaults to 'testpass'."
+    required: false
+    default: 'testpass'
+  database2:
+    description: "A name to use for a second initial database. If omitted, no second database is created. Defaults to empty."
+    required: false
+    default: ''
+  username2:
+    description: "If a second database is requested, the username to use as its owner; the first database's username is used if omitted. Ignored if there is no second database."
+    required: false
+    default: ''
+  password2:
+    description: "If a second database is requested, the password for its owning user; the first database's password is used if omitted. Ignored if there is no second database."
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  
+  steps:
+  
+    - name: Install Postgres, setup DB and auth, and wait for server start
+       run: |
+          export PATH="$(brew --prefix)/opt/${{ matrix.dbimage }}/bin:$PATH" PGDATA=/tmp/vapor-postgres-test
+          (brew unlink postgresql || true) && brew install ${{ matrix.dbimage }} && brew link --force ${{ matrix.dbimage }}
+          initdb --locale=C --auth-host ${{ matrix.dbauth }} -U "${POSTGRES_USER}" --pwfile=<(echo "${POSTGRES_PASSWORD}")
+          pg_ctl start --wait
+        timeout-minutes: 2
+
+    - name: Verify runner
+      if: ${{ runner.os != "macOS" }}
+      run: printf '::error title=Invalid OS::This action is only valid for macOS runners' && false
+
+    - name: Disable preexisting PostgreSQL installation (if any)
+      run: brew unlink postgresql || true
+    
+    - name: Install selected PostgreSQL version
+      run: |
+        pgformula="postgresql$([[ '${{ inputs.pgversion }}' == 'latest' ]] && true || echo '@${{ inputs.pgversion }}')"
+        brew install "${pgformula}"
+        echo "$(brew --prefix "${pgformula}")/bin" >> "${GITHUB_PATH}"
+        echo "PGDATA=$(mktemp -d -t 'postgresql${{ inputs.pgversion }}')" >> "${GITHUB_ENV}"
+    
+    - name: Create PostgreSQL database and start server
+      run: |
+        echo '_dbsuperuser' > "${HOME}/.pgpass"
+        initdb --locale=C -E UTF-8 \
+               --auth='${{ inputs.pgauthmethod }}' \
+               --username=_dbsuperuser --pwfile="${HOME}/.pgpass"
+        pg_ctl start --wait
+      timeout-minutes: 2
+    
+    - name: Setup PostgreSQL access
+      run: |
+        psql -d postgres -U _dbsuperuser \
+             -c "$(printf "CREATE ROLE %s LOGIN PASSWORD '%s';" '${{ inputs.username }}' '${{ inputs.password }}')" \
+             -c "$(printf "CREATE DATABASE %s OWNER %s;" '${{ inputs.database }}' '${{ inputs.username }}')"
+        if [[ -n '${{ inputs.database2 }}' ]]; then
+            user2=$([[ -n '${{ inputs.username2 }}' ]] && echo '${{ inputs.username2 }' || echo '${{ inputs.username }}')
+            pass2=$([[ -n '${{ inputs.password2 }}' ]] && echo '${{ inputs.password2 }' || echo '${{ inputs.password }}')
+            psql -d postgres -U _dbsuperuser \
+                 -c "$(printf "CREATE ROLE %s LOGIN PASSWORD '%s';" "${user2}" "${pass2}")" \
+                 -c "$(printf "CREATE DATABASE %s OWNER %s;" '${{ inputs.database2 }}' "${user2}")"
+        fi 
