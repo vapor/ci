@@ -58,12 +58,17 @@ jobs:
         swiftver:
           - swift:5.2
           - swift:5.3
-          - swift:5.4
+          #- swift:5.4
           - swift:5.5
           - swift:5.6
           - swiftlang/swift:nightly-main
         swiftos:
           - focal
+        include:
+          - swiftver: swift:5.2
+            test_flag: '--enable-test-discovery'
+          - swiftver: swift:5.3
+            test_flag: '--enable-test-discovery'
     runs-on: ubuntu-latest
     container: ${{ format('{0}-{1}', matrix.swiftver, matrix.swiftos) }}
     steps:
@@ -81,7 +86,7 @@ jobs:
           swift test ${pth} \
             ${cov} ${san} ${flt} \
             ${{ inputs.extra_flags }} ${{ inputs.extra_flags_linux }} \
-            --enable-test-discovery
+            ${{ matrix.test_flag }}
       - name: Upload code coverage when present
         if: ${{ inputs.with_coverage }}
         uses: vapor/swift-codecov-action@v0.2
@@ -160,7 +165,7 @@ jobs:
         shell: bash
         run: echo 'SWIFT_VERSION=${{matrix.swiftbranch }}/${{ matrix.swifttag }}' >>"${GITHUB_ENV}"
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Run unit tests
         shell: bash
         env:
@@ -172,8 +177,7 @@ jobs:
           pth=$([[ -n '${{ inputs.subpath }}' ]] && echo '--package-path ${{ inputs.subpath }}' || true)
           swift test ${pth} \
             ${cov} ${san} ${flt} \
-            ${{ inputs.extra_flags }} ${{ inputs.extra_flags_windows }} \
-            --enable-test-discovery
+            ${{ inputs.extra_flags }} ${{ inputs.extra_flags_windows }}
       - name: Upload code coverage when present
         if: ${{ inputs.with_coverage }}
         uses: vapor/swift-codecov-action@v0.2
