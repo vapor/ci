@@ -1,0 +1,136 @@
+name: first-issues-to-beginner-project-board
+on:
+  workflow_call:
+    inputs:
+      labelsJson:
+        type: string
+        description: The type of issue
+        required: true
+
+
+jobs:
+  setup-matrixJson:
+    runs-on: ubuntu-latest
+    steps:
+      - id: set-matrix
+        run: |
+          echo '======================'
+          echo 'Split input into array'
+          echo '======================'
+          echo ${{ inputs.labelsJson }}
+          SAVEIFS=$IFS
+          IFS=',' read -ra labels <<< ${{ inputs.labelsJson }}
+          IFS=$SAVEIFS
+
+          echo '======================'
+          echo 'Create array with project board inputs'
+          echo '======================'
+          projectboards=("Beginner Issues" "Help Wanted Issues")
+
+          echo '======================'
+          echo 'Create json used for dynamic matrix definition'
+          echo '======================'
+          json="{\"include\":["
+          for label in "${labels[@]}"
+          do
+              if [ "$label" == "good first issue" ] || [ "$label" == "help wanted" ];
+              then
+                  for board in "${projectboards[@]}"
+                  do 
+                      json="$json{ \"project\": \"$board\", \"label\": \"$label\" },"
+                  done
+              fi
+          done
+
+          json=${json%?}
+          json="$json]}"
+
+          echo '==== Print json ===='
+          echo $json
+
+          echo ::set-output name=matrix::${json}
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+
+  sanity-check:
+    needs: setup-matrixJson
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.setup-matrixJson.outputs.matrix) }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print matrix 
+        run: echo "${{ matrix.project }} ${{ matrix.label }}"
+
+  manage_project_issues:
+    needs: setup-matrixJson
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.setup-matrixJson.outputs.matrix) }}
+    runs-on: ubuntu-latest      
+    steps:
+        # When an issue that is open is labeled, unassigned or reopened without a assigned member
+        # create or move the card to "To do"
+      - name: Create or Update Project Card
+        if: | 
+          (github.event.action == 'labeled' || 
+          github.event.action == 'reopened' || 
+          github.event.action == 'unassigned') &&
+          ${{ contains(github.event.issue.labels.*.name, matrix.label) &&
+          ( matrix.label == 'good first issue' && matrix.project == 'Beginner Issues' ||
+          matrix.label == 'help wanted' && matrix.project == 'Help Wanted Issues') }}
+        uses: alex-page/github-project-automation-plus@v0.8.1
+        with:
+          project: ${{ matrix.project }}
+          column: 'To do'
+          repo-token: ${{ secrets.PROJECT_BOARD_AUTOMATION_PAT }}
+
+        # When an issue that is open is assigned and has an assigned member
+        # create or move the card to "In progress"
+      - name: Assign Project Card
+        if: |
+          github.event.action == 'assigned' && 
+          ${{ contains(github.event.issue.labels.*.name, matrix.label) &&
+          ( matrix.label == 'good first issue' && matrix.project == 'Beginner Issues' ||
+          matrix.label == 'help wanted' && matrix.project == 'Help Wanted Issues') }}
+        uses: alex-page/github-project-automation-plus@v0.8.1
+        with:
+          project: ${{ matrix.project }}
+          column: 'In progress'
+          repo-token: ${{ secrets.PROJECT_BOARD_AUTOMATION_PAT }}
+
+        # When an issue is closed
+        # Create or move the card to "Done"
+      - name: Close Project Card
+        if: |
+          github.event.action == 'closed' &&
+          ${{ contains(github.event.issue.labels.*.name, matrix.label) &&
+          ( matrix.label == 'good first issue' && matrix.project == 'Beginner Issues' ||
+          matrix.label == 'help wanted' && matrix.project == 'Help Wanted Issues') }}
+        uses: asmfnk/my-github-project-automation@v0.5.0
+        with:
+          project: ${{ matrix.project }}
+          column: 'Done'
+          repo-token: ${{ secrets.PROJECT_BOARD_AUTOMATION_PAT }}
+
+  remove_project_issues:
+    needs: setup-matrixJson
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.setup-matrixJson.outputs.matrix) }}
+    runs-on: ubuntu-latest
+    steps:
+        # When an issue has a tag removed
+        # Remove the card from the board
+      - name: Remove Project Card
+        if: |
+          github.event.action == 'unlabeled' &&
+          ${{ !contains(github.event.issue.labels.*.name, matrix.label) &&
+          ( matrix.label == 'good first issue' && matrix.project == 'Beginner Issues' ||
+          matrix.label == 'help wanted' && matrix.project == 'Help Wanted Issues') }}
+        uses: alex-page/github-project-automation-plus@v0.8.1
+        with:
+          project: ${{ matrix.project }}
+          column: 'To do'
+          repo-token: ${{ secrets.PROJECT_BOARD_AUTOMATION_PAT }}
+          action: delete
