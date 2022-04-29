@@ -10,8 +10,6 @@ on:
       PROJECT_BOARD_AUTOMATION_PAT:
         required: true
 
-
-
 jobs:
   setup-matrixJson:
     runs-on: ubuntu-latest
