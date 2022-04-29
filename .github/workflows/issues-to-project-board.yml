@@ -47,6 +47,13 @@ jobs:
           json=${json%?}
           json="$json]}"
 
+          echo '======================'
+          echo 'create invalid matrix if json is empty'
+          echo '======================'
+          if [ "$json" == "{\"include\":]}" ];
+          then
+              json="{\"include\":[{ \"project\": \"invalid\", \"label\": \"help wanted\" }]]}"
+
           echo '==== Print json ===='
           echo $json
 
@@ -60,6 +67,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.setup-matrixJson.outputs.matrix) }}
+    if: contains(github.event.issue.labels.*.name, 'good first issue') || contains(github.event.issue.labels.*.name, 'help wanted')
     steps:
       - name: Matrix input
         run: |
