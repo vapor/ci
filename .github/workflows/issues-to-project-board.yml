@@ -63,6 +63,12 @@ jobs:
     steps:
       - name: Print incoming data 
         run: |
+          echo "event labeled ${{ github.event.action == 'labeled' }}"
+          echo "event unassigned ${{ github.event.action == 'unassigned' }}"
+          echo "event reopened ${{ github.event.action == 'reopened' }}"
+          echo "event assigned ${{ github.event.action == 'assigned' }}"
+          echo "event closed ${{ github.event.action == 'closed' }}"
+          echo "event unlabeled ${{ github.event.action == 'unlabeled' }}"
           echo "label ${{ matrix.label }} ${{ matrix.label == 'good first issue' }}"
           echo "project board ${{ matrix.project }} ${{ matrix.project == 'Beginner Issues' }}"
 
