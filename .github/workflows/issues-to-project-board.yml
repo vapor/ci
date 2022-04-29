@@ -69,16 +69,17 @@ jobs:
       - name: Run on assigned
         if: |
           contains(github.event.issue.labels.*.name, ${{ matrix.label }}) &&
-          ((matrix.label == 'good first issue' && matrix.project == 'Beginner Issues') ||
-          (matrix.label == 'help wanted' && matrix.project == 'Help Wanted Issues'))
+          github.event.action == 'assigned'
         run: |
           echo "event assigned ${{ github.event.action == 'assigned' }}"
 
       - name: Run on labeled, unassigned or reopened
         if: | 
           contains(github.event.issue.labels.*.name, ${{ matrix.label }}) &&
-          ((matrix.label == 'good first issue' && matrix.project == 'Beginner Issues') ||
-          (matrix.label == 'help wanted' && matrix.project == 'Help Wanted Issues'))
+          (github.event.action == 'labeled' ||
+          github.event.action == 'unassigned' ||
+          github.event.action == 'reopened')
+
         run: |
           echo "event labeled ${{ github.event.action == 'labeled' }}"
           echo "event unassigned ${{ github.event.action == 'unassigned' }}"
@@ -86,14 +87,14 @@ jobs:
 
       - name: Run on closed
         if: | 
-          contains(github.event.issue.labels.*.name, ${{ matrix.label }})
-          ((matrix.label == 'good first issue' && matrix.project == 'Beginner Issues') ||
-          (matrix.label == 'help wanted' && matrix.project == 'Help Wanted Issues'))
+          contains(github.event.issue.labels.*.name, ${{ matrix.label }}) &&
+          github.event.action == 'closed'
         run: |
           echo "event closed ${{ github.event.action == 'closed' }}"
 
       - name: Run on unlabeled
-        if: ${{ !contains(github.event.issue.labels.*.name, matrix.label) }}
+        if: ${{ !contains(github.event.issue.labels.*.name, matrix.label) }} &&
+          github.event.action == 'unlabeled'
         run: |
           echo "event unlabeled ${{ github.event.action == 'unlabeled' }}"
 
