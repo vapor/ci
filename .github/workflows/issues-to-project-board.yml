@@ -68,7 +68,6 @@ jobs:
 
       - name: Run on assigned
         if: |
-          contains(github.event.issue.labels.*.name, ${{ matrix.label }}) &&
           github.event.action == 'assigned'
         run: |
           echo "event assigned ${{ github.event.action == 'assigned' }}"
@@ -86,7 +85,6 @@ jobs:
 
       - name: Run on closed
         if: | 
-          contains(github.event.issue.labels.*.name, ${{ matrix.label }}) &&
           github.event.action == 'closed'
         run: |
           echo "event closed ${{ github.event.action == 'closed' }}"
