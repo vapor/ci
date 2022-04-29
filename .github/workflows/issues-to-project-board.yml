@@ -47,13 +47,14 @@ jobs:
           json=${json%?}
           json="$json]}"
 
-          echo '======================'
-          echo 'create invalid matrix if json is empty'
-          echo '======================'
           if [ "$json" == "{\"include\":]}" ];
           then
+              echo '======================'
+              echo 'create invalid matrix if json is empty'
+              echo '======================'
               json="{\"include\":[{ \"project\": \"invalid\", \"label\": \"help wanted\" }]]}"
-
+          fi 
+          
           echo '==== Print json ===='
           echo $json
 
