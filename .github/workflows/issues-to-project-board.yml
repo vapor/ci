@@ -57,14 +57,10 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
 
   sanity-check:
-    needs: setup-matrixJson
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJSON(needs.setup-matrixJson.outputs.matrix) }}
     runs-on: ubuntu-latest
     steps:
-      - name: Print matrix 
-        run: echo "${{ matrix.project }} ${{ matrix.label }}"
+      - name: Print incoming data 
+        run: echo "${{ github.event }}"
 
   manage_project_issues:
     needs: setup-matrixJson
