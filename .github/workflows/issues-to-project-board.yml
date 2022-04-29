@@ -54,7 +54,7 @@ jobs:
               echo '======================'
               json="{\"include\":[{ \"project\": \"invalid\", \"label\": \"help wanted\" }]]}"
           fi 
-          
+
           echo '==== Print json ===='
           echo $json
 
@@ -83,9 +83,9 @@ jobs:
 
       - name: Run on labeled, unassigned or reopened
         if: | 
-          github.event.action == 'labeled' ||
+          (github.event.action == 'labeled' ||
           github.event.action == 'unassigned' ||
-          github.event.action == 'reopened'
+          github.event.action == 'reopened')
 
         run: |
           echo "event labeled ${{ github.event.action == 'labeled' }}"
@@ -94,7 +94,9 @@ jobs:
 
       - name: Run on closed
         if: | 
-          github.event.action == 'closed'
+          github.event.action == 'closed' &&
+          ((matrix.label == 'good first issue' && matrix.project == 'Beginner Issues') ||
+          (matrix.label == 'help wanted' && matrix.project == 'Help Wanted Issues'))
         run: |
           echo "event closed ${{ github.event.action == 'closed' }}"
 
@@ -111,7 +113,8 @@ jobs:
   #   strategy:
   #     fail-fast: false
   #     matrix: ${{ fromJSON(needs.setup-matrixJson.outputs.matrix) }}
-  #   runs-on: ubuntu-latest      
+  #   runs-on: ubuntu-latest    
+  #   if: contains(github.event.issue.labels.*.name, 'good first issue') || contains(github.event.issue.labels.*.name, 'help wanted')  
   #   steps:
   #       # When an issue that is open is labeled, unassigned or reopened without a assigned member
   #       # create or move the card to "To do"
@@ -163,6 +166,7 @@ jobs:
   #     fail-fast: false
   #     matrix: ${{ fromJSON(needs.setup-matrixJson.outputs.matrix) }}
   #   runs-on: ubuntu-latest
+  #   if: ${{ !contains(github.event.issue.labels.*.name, 'good first issue')}} || ${{ !contains(github.event.issue.labels.*.name, 'help wanted') }}
   #   steps:
   #       # When an issue has a tag removed
   #       # Remove the card from the board
