@@ -75,10 +75,9 @@ jobs:
 
       - name: Run on labeled, unassigned or reopened
         if: | 
-          contains(github.event.issue.labels.*.name, ${{ matrix.label }}) &&
-          (github.event.action == 'labeled' ||
+          github.event.action == 'labeled' ||
           github.event.action == 'unassigned' ||
-          github.event.action == 'reopened')
+          github.event.action == 'reopened'
 
         run: |
           echo "event labeled ${{ github.event.action == 'labeled' }}"
