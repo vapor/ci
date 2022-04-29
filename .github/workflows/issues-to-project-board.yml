@@ -6,6 +6,10 @@ on:
         type: string
         description: The type of issue
         required: true
+    secrets:
+      PROJECT_BOARD_AUTOMATION_PAT:
+        required: true
+
 
 
 jobs:
