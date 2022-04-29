@@ -65,7 +65,7 @@ jobs:
         run: |
           echo "label ${{ matrix.label }} ${{ matrix.label == 'good first issue' }}"
           echo "project board ${{ matrix.project }} ${{ matrix.project == 'Beginner Issues' }}"
-          
+
       - name: Run on assigned
         if: contains(github.event.issue.labels.*.name, ${{ matrix.label }})
         run: |
@@ -84,7 +84,7 @@ jobs:
           echo "event closed ${{ github.event.action == 'closed' }}"
 
       - name: Run on unlabeled
-        if: ${{ !contains(github.event.issue.labels.*.name, ${{ matrix.label }}) }}
+        if: ${{ !contains(github.event.issue.labels.*.name, matrix.label) }}
         run: |
           echo "event unlabeled ${{ github.event.action == 'unlabeled' }}"
 
