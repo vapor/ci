@@ -77,7 +77,9 @@ jobs:
 
       - name: Run on assigned
         if: |
-          github.event.action == 'assigned'
+          github.event.action == 'assigned' &&
+          ((matrix.label == 'good first issue' && matrix.project == 'Beginner Issues') ||
+          (matrix.label == 'help wanted' && matrix.project == 'Help Wanted Issues'))
         run: |
           echo "event assigned ${{ github.event.action == 'assigned' }}"
 
@@ -85,7 +87,9 @@ jobs:
         if: | 
           (github.event.action == 'labeled' ||
           github.event.action == 'unassigned' ||
-          github.event.action == 'reopened')
+          github.event.action == 'reopened') &&
+          ((matrix.label == 'good first issue' && matrix.project == 'Beginner Issues') ||
+          (matrix.label == 'help wanted' && matrix.project == 'Help Wanted Issues'))
 
         run: |
           echo "event labeled ${{ github.event.action == 'labeled' }}"
