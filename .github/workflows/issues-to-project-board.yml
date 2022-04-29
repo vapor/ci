@@ -61,16 +61,34 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJSON(needs.setup-matrixJson.outputs.matrix) }}
     steps:
-      - name: Print incoming data 
+      - name: Matrix input
+        run: |
+          echo "label ${{ matrix.label }} ${{ matrix.label == 'good first issue' }}"
+          echo "project board ${{ matrix.project }} ${{ matrix.project == 'Beginner Issues' }}"
+          
+      - name: Run on assigned
+        if: contains(github.event.issue.labels.*.name, ${{ matrix.label }})
+        run: |
+          echo "event assigned ${{ github.event.action == 'assigned' }}"
+
+      - name: Run on labeled, unassigned or reopened
+        if: contains(github.event.issue.labels.*.name, ${{ matrix.label }})
         run: |
           echo "event labeled ${{ github.event.action == 'labeled' }}"
           echo "event unassigned ${{ github.event.action == 'unassigned' }}"
           echo "event reopened ${{ github.event.action == 'reopened' }}"
-          echo "event assigned ${{ github.event.action == 'assigned' }}"
+
+      - name: Run on closed
+        if: contains(github.event.issue.labels.*.name, ${{ matrix.label }})
+        run: |
           echo "event closed ${{ github.event.action == 'closed' }}"
+
+      - name: Run on unlabeled
+        if: ${{ !contains(github.event.issue.labels.*.name, ${{ matrix.label }}) }}
+        run: |
           echo "event unlabeled ${{ github.event.action == 'unlabeled' }}"
-          echo "label ${{ matrix.label }} ${{ matrix.label == 'good first issue' }}"
-          echo "project board ${{ matrix.project }} ${{ matrix.project == 'Beginner Issues' }}"
+
+    continue-on-error: true
 
   # manage_project_issues:
   #   needs: setup-matrixJson
