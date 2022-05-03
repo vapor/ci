@@ -52,7 +52,7 @@ jobs:
               echo '======================'
               echo 'create invalid matrix if json is empty'
               echo '======================'
-              json="{\"include\":[{ \"project\": \"unknown\", \"label\": \"unknown\" }]}"
+              json="{\"include\":[{ \"project\": \"Beginner Issues\", \"label\": \"good first issue\" }, { \"project\": \"Help Wanted Issues\", \"label\": \"help wanted\" }]}"
           fi 
 
           echo '==== Print json ===='
