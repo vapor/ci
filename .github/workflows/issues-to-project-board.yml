@@ -16,49 +16,59 @@ jobs:
     steps:
       - id: set-matrix
         run: |
-          echo '======================'
-          echo 'Split input into array'
-          echo '======================'
-          echo ${{ inputs.labelsJson }}
-          SAVEIFS=$IFS
-          IFS=',' read -ra labels <<< ${{ inputs.labelsJson }}
-          IFS=$SAVEIFS
-
-          echo '======================'
-          echo 'Create array with project board inputs'
-          echo '======================'
-          projectboards=("Beginner Issues" "Help Wanted Issues")
-
-          echo '======================'
-          echo 'Create json used for dynamic matrix definition'
-          echo '======================'
-          json="{\"include\":["
-          for label in "${labels[@]}"
-          do
-              if [ "$label" == "good first issue" ] || [ "$label" == "help wanted" ];
-              then
-                  for board in "${projectboards[@]}"
-                  do 
-                      json="$json{ \"project\": \"$board\", \"label\": \"$label\" },"
-                  done
-              fi
-          done
-
-          json=${json%?}
-          json="$json]}"
-
-          if [ "$json" == "{\"include\":]}" ];
+          input="${{ inputs.labelsJson }}"
+          if [ -z "$input" ];
           then
-              echo '======================'
-              echo 'create invalid matrix if json is empty'
-              echo '======================'
-              json="{\"include\":[{ \"project\": \"Beginner Issues\", \"label\": \"good first issue\" }, { \"project\": \"Help Wanted Issues\", \"label\": \"help wanted\" }]}"
-          fi 
+            json="{\"include\":[{ \"project\": \"unknown\", \"label\": \"unknown\" }, { \"project\": \"unknown\", \"label\": \"unknown\" }]}"
+            echo '==== Print json ===='
+            echo $json
 
-          echo '==== Print json ===='
-          echo $json
+            echo ::set-output name=matrix::${json}
+          else
+              echo '======================'
+              echo 'Split input into array'
+              echo '======================'
+              echo ${{ inputs.labelsJson }}
+              SAVEIFS=$IFS
+              IFS=',' read -ra labels <<< ${{ inputs.labelsJson }}
+              IFS=$SAVEIFS
 
-          echo ::set-output name=matrix::${json}
+              echo '======================'
+              echo 'Create array with project board inputs'
+              echo '======================'
+              projectboards=("Beginner Issues" "Help Wanted Issues")
+
+              echo '======================'
+              echo 'Create json used for dynamic matrix definition'
+              echo '======================'
+              json="{\"include\":["
+              for label in "${labels[@]}"
+              do
+                  if [ "$label" == "good first issue" ] || [ "$label" == "help wanted" ];
+                  then
+                      for board in "${projectboards[@]}"
+                      do 
+                          json="$json{ \"project\": \"$board\", \"label\": \"$label\" },"
+                      done
+                  fi
+              done
+
+              json=${json%?}
+              json="$json]}"
+
+              if [ "$json" == "{\"include\":]}" ];
+              then
+                  echo '======================'
+                  echo 'create invalid matrix if json is empty'
+                  echo '======================'
+                  json="{\"include\":[{ \"project\": \"Beginner Issues\", \"label\": \"good first issue\" }, { \"project\": \"Help Wanted Issues\", \"label\": \"help wanted\" }]}"
+              fi 
+
+              echo '==== Print json ===='
+              echo $json
+
+              echo ::set-output name=matrix::${json}
+          fi
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
 
