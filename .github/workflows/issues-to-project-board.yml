@@ -19,7 +19,7 @@ jobs:
           input="${{ inputs.labelsJson }}"
           if [ -z "$input" ];
           then
-            json="{\"include\":[{ \"project\": \"unknown\", \"label\": \"unknown\" }, { \"project\": \"unknown\", \"label\": \"unknown\" }]}"
+            json="{\"include\":[{ \"project\": \"unknown\", \"label\": \"unknown\" }]}"
             echo '==== Print json ===='
             echo $json
 
