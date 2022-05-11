@@ -62,11 +62,6 @@ jobs:
           - swiftlang/swift:nightly-main
         swiftos:
           - focal
-        include:
-          - swiftver: swift:5.2
-            test_flag: '--enable-test-discovery'
-          - swiftver: swift:5.3
-            test_flag: '--enable-test-discovery'
     runs-on: ubuntu-latest
     container: ${{ format('{0}-{1}', matrix.swiftver, matrix.swiftos) }}
     steps:
