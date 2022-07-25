@@ -79,8 +79,7 @@ jobs:
           pth=$([[ -n '${{ inputs.subpath }}' ]] && echo '--package-path ${{ inputs.subpath }}' || true)
           swift test ${pth} \
             ${cov} ${san} ${flt} \
-            ${{ inputs.extra_flags }} ${{ inputs.extra_flags_linux }} \
-            ${{ matrix.test_flag }}
+            ${{ inputs.extra_flags }} ${{ inputs.extra_flags_linux }}
       - name: Upload code coverage when present
         if: ${{ inputs.with_coverage }}
         uses: vapor/swift-codecov-action@v0.2
@@ -97,13 +96,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        macos:
+          - macos-11
+          - macos-12
         xcode:
-          - latest
           - latest-stable
         include:
-          - xcode: latest-stable
-            extra_flags: '-Xlinker -rpath -Xlinker $(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.5/macosx'
-    runs-on: macos-11
+          - macos: macos-12
+            xcode: latest
+    runs-on: ${{ matrix.macos }}
     steps:
       - name: Select appropriate Xcode version
         uses: maxim-lobanov/setup-xcode@v1
@@ -122,8 +123,7 @@ jobs:
           pth=$([[ -n '${{ inputs.subpath }}' ]] && echo '--package-path ${{ inputs.subpath }}' || true)
           swift test ${pth} \
             ${cov} ${san} ${flt} \
-            ${{ inputs.extra_flags }} ${{ inputs.extra_flags_macos }} ${{ matrix.extra_flags }} \
-            --enable-test-discovery
+            ${{ inputs.extra_flags }} ${{ inputs.extra_flags_macos }}
       - name: Upload code coverage when present
         if: ${{ inputs.with_coverage }}
         uses: vapor/swift-codecov-action@v0.2
