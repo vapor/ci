@@ -1,0 +1,45 @@
+name: Perform public API breakage check for Swift package
+description: Encapsulates the steps for running the package pubilc API breakage checker provided by Swift Package Manager.
+
+inputs:
+  baseline_ref:
+    required: false
+    default: 'origin/main'
+    description: "A git ref to use as the baseline API"
+  allowlist_path:
+    required: false
+    default: ''
+    description: "A repo-relative path containing API breakage diagnostics to be ignored"
+  extra_flags:
+    required: false
+    default: ''
+    description: "Additional 'swift package diagnose-api-breaking-changes' flags."
+  subpath:
+    required: false
+    default: ''
+    description: "Run the API check from a subpath of the repository. Used for testing the workflow."
+
+runs:
+  using: composite
+  steps:
+      # https://github.com/actions/checkout/issues/766
+      - name: Mark the Git workspace safe
+        shell: bash
+        run: git config --global --add safe.directory ${GITHUB_WORKSPACE}
+
+      - name: Perform API breakage check
+        shell: bash
+        run: |
+          if [[ -n '${{ inputs.allowlist_path }}' ]]; then
+            allowlist_option='--breakage-allowlist-path ${{ inputs.allowlist_path }}'
+          fi
+          if [[ -n '${{ inputs.subpath }}' ]]; then
+            pkg_path_option='--package-path ${{ inputs.subpath }}'
+          fi
+          
+          swift package diagnose-api-breaking-changes \
+            ${pkg_path_option} \
+            ${allowlist_option} \
+            --regenerate-baseline \
+            ${{inputs.extra_flags}} \
+            ${{inputs.baseline_ref}}

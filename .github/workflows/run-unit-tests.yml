@@ -13,6 +13,11 @@ on:
         required: false
         default: true
         description: "Set to 'true' to run tests with Thread Sanitizer. Defaults to 'true'."
+      with_public_api_check:
+        type: boolean
+        required: false
+        default: false
+        description: "Set to 'true' to run the SwiftPM public API breakage check. Defaults to 'false'."
       test_filter:
         type: string
         required: false
@@ -50,6 +55,20 @@ on:
         description: "Additional 'swift test' flags to be applied only when testing on Windows."
 
 jobs:
+
+  api-breakage:
+    if: ${{ inputs.with_public_api_check }}
+    runs-on: ubuntu-latest
+    container: swift:5.6-focal
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Run API breakage check action
+        uses: vapor/ci/.github/actions/ci-swift-check-api-breakage@reusable-workflows
+        with:
+          subpath: ${{ inputs.subpath }}
 
   linux-unit:
     strategy:
