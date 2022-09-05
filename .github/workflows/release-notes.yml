@@ -1,0 +1,39 @@
+name: Release-notes to Vapor docs
+
+on: 
+  workflow_call:
+    inputs:
+      version:
+          type: string
+          description: The release label
+          required: true
+      description:
+          type: string
+          description: The description of the release
+          required: true
+      URL: 
+          type: string
+          description: The URL of the release
+          required: true
+      repo: 
+          type: string
+          description: The repo where the release was created
+          required: true
+
+jobs:
+  update-release-notes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone docs and insert release notes
+        run: |
+          git clone "https://github.com/BennyDeBock/docs.git"
+
+          awk '/<Title>/ {print; print; print "###${{ inputs.version }}  \n${{inputs.description}}  \nLink: ${{ inputs.URL }}  \n"; next}1' docs/release-notes.md > temp.txt
+          cat temp.txt > docs/release-notes.md
+
+          git checkout -b release-notes/Update
+          git add docs/release-notes.md
+          git commit -m "Add release ${{ inputs.version }} under ${{ inputs.repo }}"
+          git push --set-upstream origin release-notes/Update
+
+          gh pr create --title "Update release notes" --body "This pr adds release ${{ inputs.version }} to the release notes in the vapor documentation for the ${{ inputs.repo }} repository." -r "0xTim"
