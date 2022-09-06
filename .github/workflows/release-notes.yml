@@ -31,14 +31,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Clone docs and insert release notes
+        uses: oleksiyrudenko/gha-git-credentials@v2-latest
+        with:
+          global: true
+          name: 'VaporBot'
+          email: 'bot@vapor.codes'
+          actor: 'VaporBot'
+          token: '${{ secrets.RELEASE_NOTES_PAT }}'
         run: |
           version=$(echo ${{ inputs.version }} | sed "s/'/\\\\\\\\\\\\\\\\'/g")
           description=$(echo ${{ inputs.description }} | sed "s/'/\\\\\\\\\\\\\\\\'/g")
           URL=$(echo ${{ inputs.URL }} | sed "s/'/\\\\\\\\\\\\\\\\'/g")
-
-          git config --global credential.helper store
-          git config --global user.email "bdebock@protonmail.com"
-          git config --global user.name "BennyDeBock"
 
           gh repo clone git@github.com:BennyDeBock/docs.git
           cd docs 
