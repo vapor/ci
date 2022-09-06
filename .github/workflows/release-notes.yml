@@ -26,9 +26,12 @@ jobs:
     steps:
       - name: Clone docs and insert release notes
         run: |
+          git config --global user.email "bot@vapor.codes"
+          git config --global user.name "VaporBot"
+          
           git clone "https://github.com/BennyDeBock/docs.git"
           cd docs 
-          
+
           awk '/<Title>/ {print; print; print "###${{ inputs.version }}  \n${{inputs.description}}  \nLink: ${{ inputs.URL }}  \n"; next}1' docs/release-notes.md > temp.txt
           cat temp.txt > docs/release-notes.md
 
