@@ -46,4 +46,4 @@ jobs:
 
           gh pr create --title "Update release notes" --body "This pr adds release ${{ inputs.version }} to the release notes in the vapor documentation for the ${{ inputs.repo }} repository." -r "0xTim"
         env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_NOTES_PAT }}
+          GH_TOKEN: ${{ secrets.RELEASE_NOTES_PAT }}
