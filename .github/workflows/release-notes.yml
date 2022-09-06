@@ -39,9 +39,10 @@ jobs:
           token: '${{ secrets.RELEASE_NOTES_PAT }}'
       - name: Clone docs and insert release notes
         run: |
-          version=$(echo "${{ inputs.version }}"" | sed "s/'/\\\\\\\\\\\\\\\\'/g")
-          description=$(echo "${{ inputs.description }}" | sed "s/'/\\\\\\\\\\\\\\\\'/g")
-          URL=$(echo "${{ inputs.URL }}" | sed "s/'/\\\\\\\\\\\\\\\\'/g")
+          version=${{ inputs.version }}
+          description=${{ inputs.description }}
+          URL=${{ inputs.URL }}
+          repo=${{ inputs.repo }}
 
           echo "$version"
           echo "$description"
