@@ -36,7 +36,7 @@ jobs:
           description=$(echo ${{ inputs.description }} | sed "s/'/\\\\\\\\\\\\\\\\'/g")
           URL=$(echo ${{ inputs.URL }} | sed "s/'/\\\\\\\\\\\\\\\\'/g")
 
-          git config credential.helper store
+          git config --global credential.helper store
           git config --global user.email "bdebock@protonmail.com"
           git config --global user.name "BennyDeBock"
 
