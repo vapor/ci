@@ -49,11 +49,16 @@ jobs:
           awk -v version="### $version" -v description="$description" -v link="Link: [$URL]($URL)" $'/${{ inputs.repo }}/ {print; printf "\\n%s  \\n%s \\n%s \\n\\n", version, description, link; next}1' docs/release-notes.md > temp
           cat temp > docs/release-notes.md
 
+          echo '========== Create new branch =========='
           git checkout -b release-notes/Update
+          echo '========== Stage changes =========='
           git add docs/release-notes.md
+          echo '========== Committing changes =========='
           git commit -m "Add release ${{ inputs.version }} under ${{ inputs.repo }}"
+          echo '========== Pushing changes =========='
           git push --set-upstream origin release-notes/Update
 
+          echo '========== Create pull request =========='
           echo ${{ secrets.RELEASE_NOTES_PAT }} | gh auth login --with-token
           gh pr create --title "Update release notes" --body "This pr adds release ${{ inputs.version }} to the release notes in the vapor documentation for the ${{ inputs.repo }} repository."
 
