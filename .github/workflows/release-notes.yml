@@ -20,8 +20,8 @@ on:
           description: The repo where the release was created
           required: true
     secrets:
-      RELEASE_NOTES_PAT: ${{ secrets.RELEASE_NOTES_PAT }}
-
+      RELEASE_NOTES_PAT: 
+        required: true
 
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
