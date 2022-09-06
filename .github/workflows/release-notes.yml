@@ -43,6 +43,13 @@ jobs:
           description=$(echo ${{ inputs.description }} | sed "s/'/\\\\\\\\\\\\\\\\'/g")
           URL=$(echo ${{ inputs.URL }} | sed "s/'/\\\\\\\\\\\\\\\\'/g")
 
+          echo ${{ inputs.version }}
+          echo ${{ inputs.description }}
+          echo ${{ inputs.URL }}
+          echo $version
+          echo $description 
+          echo $URL 
+
           gh repo clone BennyDeBock/docs
           cd docs 
 
@@ -52,14 +59,13 @@ jobs:
           echo '========== Create new branch =========='
           git checkout -b release-notes/Update
           echo '========== Stage changes =========='
+          git status
           git add docs/release-notes.md
+          git status
           echo '========== Committing changes =========='
           git commit -m "Add release ${{ inputs.version }} under ${{ inputs.repo }}"
           echo '========== Pushing changes =========='
           git remote set-url origin https://VaporBot:${{secrets.RELEASE_NOTES_PAT}}@github.com/BennyDeBock/docs.git
           git push --set-upstream origin release-notes/Update
 
-          echo '========== Create pull request =========='
-          gh pr create --title "Update release notes" --body "This pr adds release ${{ inputs.version }} to the release notes in the vapor documentation for the ${{ inputs.repo }} repository."
-
-          echo "-r '0xTim'"
+          
