@@ -30,14 +30,14 @@ jobs:
   update-release-notes:
     runs-on: ubuntu-latest
     steps:
-      - name: Clone docs and insert release notes
-        uses: oleksiyrudenko/gha-git-credentials@v2-latest
+      - uses: oleksiyrudenko/gha-git-credentials@v2-latest
         with:
           global: true
           name: 'VaporBot'
           email: 'bot@vapor.codes'
           actor: 'VaporBot'
           token: '${{ secrets.RELEASE_NOTES_PAT }}'
+      - name: Clone docs and insert release notes
         run: |
           version=$(echo ${{ inputs.version }} | sed "s/'/\\\\\\\\\\\\\\\\'/g")
           description=$(echo ${{ inputs.description }} | sed "s/'/\\\\\\\\\\\\\\\\'/g")
