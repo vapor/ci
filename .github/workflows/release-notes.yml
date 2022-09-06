@@ -20,6 +20,9 @@ on:
           description: The repo where the release was created
           required: true
 
+env:
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 jobs:
   update-release-notes:
     runs-on: ubuntu-latest
@@ -44,7 +47,6 @@ jobs:
           git commit -m "Add release ${{ inputs.version }} under ${{ inputs.repo }}"
           git push --set-upstream origin release-notes/Update
 
-          echo ${{ secrets.RELEASE_NOTES_PAT }} | gh auth login --with-token
-          gh pr create --title "Update release notes" --body "This pr adds release ${{ inputs.version }} to the release notes in the vapor documentation for the ${{ inputs.repo }} repository." -r "0xTim"
-        env:
-          GH_TOKEN: ${{ secrets.RELEASE_NOTES_PAT }}
+          gh pr create --title "Update release notes" --body "This pr adds release ${{ inputs.version }} to the release notes in the vapor documentation for the ${{ inputs.repo }} repository."
+
+          echo "-r '0xTim'"
