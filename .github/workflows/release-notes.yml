@@ -26,14 +26,18 @@ jobs:
     steps:
       - name: Clone docs and insert release notes
         run: |
+          version=$(echo ${{ inputs.version }} | sed "s/'/\\\\\\\\\\\\\\\\'/g")
+          description=$(echo ${{ inputs.description }} | sed "s/'/\\\\\\\\\\\\\\\\'/g")
+          URL=$(echo ${{ inputs.URL }} | sed "s/'/\\\\\\\\\\\\\\\\'/g")
+
           git config --global user.email "bot@vapor.codes"
           git config --global user.name "VaporBot"
-          
+
           git clone "https://github.com/BennyDeBock/docs.git"
           cd docs 
 
-          awk '/<Title>/ {print; print; print "###${{ inputs.version }}  \n${{inputs.description}}  \nLink: ${{ inputs.URL }}  \n"; next}1' docs/release-notes.md > temp.txt
-          cat temp.txt > docs/release-notes.md
+          awk -v version="### $version" -v description="$description" -v link="Link: [$URL]($URL)" $'/${{ inputs.repo }}/ {print; printf "\\n%s  \\n%s \\n%s \\n\\n", version, description, link; next}1' docs/release-notes.md > temp
+          cat temp > docs/release-notes.md
 
           git checkout -b release-notes/Update
           git add docs/release-notes.md
