@@ -28,6 +28,13 @@ jobs:
         run: |
           git clone "https://github.com/BennyDeBock/docs.git"
 
+          echo "======"
+          ls -a 
+          echo "======"
+          cd docs 
+          echo "======"
+          ls -a
+          echo "======"
           awk '/<Title>/ {print; print; print "###${{ inputs.version }}  \n${{inputs.description}}  \nLink: ${{ inputs.URL }}  \n"; next}1' docs/release-notes.md > temp.txt
           cat temp.txt > docs/release-notes.md
 
