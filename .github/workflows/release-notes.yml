@@ -57,7 +57,7 @@ jobs:
           cat temp > docs/release-notes.md
 
           echo '========== Create new branch =========='
-          git checkout -b release-notes/Update
+          git checkout -b "release-notes/${{inputs.repo}}v${branchName}"
 
           echo '========== Stage changes =========='
           git add docs/release-notes.md
@@ -68,7 +68,7 @@ jobs:
           echo '========== Pushing changes =========='
           branchName=$(echo "v1.2.8 Create a new branch" | grep -Po '(?<=v)[^ ]+')
           git remote set-url origin https://VaporBot:${{secrets.RELEASE_NOTES_PAT}}@github.com/BennyDeBock/docs.git
-          git push --set-upstream origin "release-notes/Update${{inputs.repo}}v${branchName}"
+          git push --set-upstream origin "release-notes/${{inputs.repo}}v${branchName}"
 
           echo '========== Create pull request =========='
           gh pr create --title "Update release notes" --body "This pr adds release ${{ inputs.version }} to the release notes in the vapor documentation for the ${{ inputs.repo }} repository."
