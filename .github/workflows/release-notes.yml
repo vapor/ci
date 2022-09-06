@@ -19,6 +19,9 @@ on:
           type: string
           description: The repo where the release was created
           required: true
+    secrets:
+      RELEASE_NOTES_PAT: ${{ secrets.RELEASE_NOTES_PAT }}
+
 
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
