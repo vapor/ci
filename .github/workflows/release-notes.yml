@@ -33,7 +33,7 @@ jobs:
           git config --global user.email "bot@vapor.codes"
           git config --global user.name "VaporBot"
 
-          gh clone BennyDeBock/docs
+          gh repo clone BennyDeBock/docs
           cd docs 
 
           awk -v version="### $version" -v description="$description" -v link="Link: [$URL]($URL)" $'/${{ inputs.repo }}/ {print; printf "\\n%s  \\n%s \\n%s \\n\\n", version, description, link; next}1' docs/release-notes.md > temp
