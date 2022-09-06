@@ -30,7 +30,6 @@ jobs:
           description=$(echo ${{ inputs.description }} | sed "s/'/\\\\\\\\\\\\\\\\'/g")
           URL=$(echo ${{ inputs.URL }} | sed "s/'/\\\\\\\\\\\\\\\\'/g")
 
-          git config --global
           git config --global user.email "bot@vapor.codes"
           git config --global user.name "VaporBot"
 
