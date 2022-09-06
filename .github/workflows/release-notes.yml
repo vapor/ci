@@ -43,7 +43,7 @@ jobs:
           description=$(echo ${{ inputs.description }} | sed "s/'/\\\\\\\\\\\\\\\\'/g")
           URL=$(echo ${{ inputs.URL }} | sed "s/'/\\\\\\\\\\\\\\\\'/g")
 
-          gh repo clone git@github.com:BennyDeBock/docs.git
+          gh repo clone BennyDeBock/docs
           cd docs 
 
           awk -v version="### $version" -v description="$description" -v link="Link: [$URL]($URL)" $'/${{ inputs.repo }}/ {print; printf "\\n%s  \\n%s \\n%s \\n\\n", version, description, link; next}1' docs/release-notes.md > temp
