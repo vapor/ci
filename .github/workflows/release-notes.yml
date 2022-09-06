@@ -39,15 +39,17 @@ jobs:
           token: '${{ secrets.RELEASE_NOTES_PAT }}'
       - name: Clone docs and insert release notes
         run: |
-          version=${{ inputs.version }}
-          version2=$(echo "What's changed and what's new" | sed "s/'/\\\\\\\\\\\\\\\\'/g")
-          description=${{ inputs.description }}
-          URL=${{ inputs.URL }}
-          repo=${{ inputs.repo }}
+          version="${{ inputs.version }}"
+          version2=$(echo "${{ inputs.version }}" | sed "s/'/\\\\\\\\\\\\\\\\'/g")
+          description="${{ inputs.description }}"
+          description2=$(echo "${{ inputs.description }}" | sed "s/'/\\\\\\\\\\\\\\\\'/g")
+          URL="${{ inputs.URL }}"
+          repo="${{ inputs.repo }}"
 
           echo "$version"
           echo "$version2"
           echo "$description"
+          echo "$description2"
           echo "$URL"
 
           gh repo clone BennyDeBock/docs
