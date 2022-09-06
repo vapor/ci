@@ -57,7 +57,7 @@ jobs:
           cat temp > docs/release-notes.md
 
           echo '========== Create new branch =========='
-          branchName=$(echo "v1.2.8 Create a new branch" | grep -Po '(?<=v)[^ ]+')
+          branchName=$(echo "${{ inputs.version }}" | grep -Po '(?<=v)[^ ]+')
           git checkout -b "release-notes/${{inputs.repo}}v${branchName}"
 
           echo '========== Stage changes =========='
