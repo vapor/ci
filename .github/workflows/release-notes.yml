@@ -56,7 +56,7 @@ jobs:
           echo '========== Committing changes =========='
           git commit -m "Add release ${{ inputs.version }} under ${{ inputs.repo }}"
           echo '========== Pushing changes =========='
-          git remote set-url origin https://VaporBot:${{secrets.RELEASE_NOTES_PAT}}@github.com:BennyDeBock/docs.git
+          git remote set-url origin https://VaporBot:${{secrets.RELEASE_NOTES_PAT}}@github.com/BennyDeBock/docs.git
           git push --set-upstream origin release-notes/Update
 
           echo '========== Create pull request =========='
