@@ -23,6 +23,9 @@ on:
       RELEASE_NOTES_PAT: 
         required: true
 
+env:
+  GH_TOKEN: ${{ secrets.RELEASE_NOTES_PAT }}
+
 jobs:
   update-release-notes:
     runs-on: ubuntu-latest
@@ -57,7 +60,6 @@ jobs:
           git push --set-upstream origin release-notes/Update
 
           echo '========== Create pull request =========='
-          echo ${{ secrets.RELEASE_NOTES_PAT }} | gh auth login --with-token
           gh pr create --title "Update release notes" --body "This pr adds release ${{ inputs.version }} to the release notes in the vapor documentation for the ${{ inputs.repo }} repository."
 
           echo "-r '0xTim'"
