@@ -30,6 +30,7 @@ jobs:
           description=$(echo ${{ inputs.description }} | sed "s/'/\\\\\\\\\\\\\\\\'/g")
           URL=$(echo ${{ inputs.URL }} | sed "s/'/\\\\\\\\\\\\\\\\'/g")
 
+          git config --global
           git config --global user.email "bot@vapor.codes"
           git config --global user.name "VaporBot"
 
@@ -45,3 +46,5 @@ jobs:
           git push --set-upstream origin release-notes/Update
 
           gh pr create --title "Update release notes" --body "This pr adds release ${{ inputs.version }} to the release notes in the vapor documentation for the ${{ inputs.repo }} repository." -r "0xTim"
+        env:
+          GH_TOKEN: $
