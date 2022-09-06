@@ -57,7 +57,7 @@ jobs:
           git commit -m "Add release ${{ inputs.version }} under ${{ inputs.repo }}"
           echo '========== Pushing changes =========='
           git remote rm origin
-          git remote add origin 'git@github.com:username/repo.git'
+          git remote add origin 'git@github.com:BennyDeBock/docs.git'
           git push --set-upstream origin release-notes/Update
 
           echo '========== Create pull request =========='
