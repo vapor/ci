@@ -56,7 +56,7 @@ jobs:
           cd docs 
 
           echo '========== Add Release =========='
-          awk -v version="### $version" -v description="$description" -v link="Link: [$URL]($URL)" $'/${{ inputs.repo }}/ {print; printf "\\n%s  \\n%s \\n%s \\n\\n", version, description, link; next}1' docs/release-notes.md > temp
+          awk -v version="### $version" -v description="$description" -v link="Link: [$URL]($URL)" $'/## ${{ inputs.repo }}/ {print; printf "\\n%s  \\n%s \\n%s \\n\\n", version, description, link; next}1' docs/release-notes.md > temp
           cat temp > docs/release-notes.md
 
           echo '========== Create new branch =========='
