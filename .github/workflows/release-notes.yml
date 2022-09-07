@@ -37,22 +37,25 @@ jobs:
           email: 'bot@vapor.codes'
           actor: 'VaporBot'
           token: '${{ secrets.RELEASE_NOTES_PAT }}'
+        # Creates variables to use
+        # Clones the repo
+        # Copies the current file and adds the changes to a temporary file
+        # Copies the temporary file replacing the current release notes
+        # Creates a branch and commits changes
+        # Creates a PR
       - name: Clone docs and insert release notes
         run: |
-          echo "${{inputs.description}}"
+          echo '========== Prepare Special Characters =========='
           version=$(echo "${{ inputs.version }}" | sed "s/'/\\\\\\\\\\\\\\\\'/g")
           description=$(echo "${{ inputs.description }}" | sed "s/'/\\\\\\\\\\\\\\\\'/g")
           URL=$(echo "${{ inputs.URL }}" | sed "s/'/\\\\\\\\\\\\\\\\'/g")
           repo=$(echo "${{ inputs.repo }}" | sed "s/'/\\\\\\\\\\\\\\\\'/g")
 
-          echo "$version"
-          echo "$description"
-          echo "$URL"
-          echo "$repo"
-
+          echo '========== Clone Repository =========='
           gh repo clone vapor/docs
           cd docs 
 
+          echo '========== Add Release =========='
           awk -v version="### $version" -v description="$description" -v link="Link: [$URL]($URL)" $'/${{ inputs.repo }}/ {print; printf "\\n%s  \\n%s \\n%s \\n\\n", version, description, link; next}1' docs/release-notes.md > temp
           cat temp > docs/release-notes.md
 
@@ -63,7 +66,7 @@ jobs:
           echo '========== Stage changes =========='
           git add docs/release-notes.md
 
-          echo '========== Committing changes =========='
+          echo '========== Commit changes =========='
           git commit -m "Add release ${{ inputs.version }} under ${{ inputs.repo }}"
 
           echo '========== Pushing changes =========='
@@ -71,6 +74,4 @@ jobs:
           git push --set-upstream origin "release-notes/${{inputs.repo}}v${branchName}"
 
           echo '========== Create pull request =========='
-          gh pr create --title "Update release notes" --body "This pr adds release ${{ inputs.version }} to the release notes in the vapor documentation for the ${{ inputs.repo }} repository." -r "0xTim"
-
-          echo "-r '0xTim'"
+          gh pr create --title "Update release notes" --body "This pr adds release ${{ inputs.version }} to the release notes in the vapor documentation for the ${{ inputs.repo }} repository."
