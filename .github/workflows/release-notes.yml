@@ -60,7 +60,7 @@ jobs:
           cat temp > docs/release-notes.md
 
           echo '========== Create new branch =========='
-          branchName=$(echo "${{ inputs.version }}" | grep -Po '(?<=v)[^ ]+')
+          branchName=$(echo "${{ inputs.version }}" | grep -Po '^([0-9]+[.][0-9]+[.][0-9]+)')
           git checkout -b "release-notes/${{inputs.repo}}v${branchName}"
 
           echo '========== Stage changes =========='
@@ -74,4 +74,4 @@ jobs:
           git push --set-upstream origin "release-notes/${{inputs.repo}}v${branchName}"
 
           echo '========== Create pull request =========='
-          gh pr create --title "Update release notes" --body "This pr adds release ${{ inputs.version }} to the release notes in the vapor documentation for the ${{ inputs.repo }} repository."
+          gh pr create --title "Update release notes" --body "This pr adds release ${{ inputs.version }} to the release notes in the vapor documentation for the ${{ inputs.repo }} repository." --label "no-translation-needed"
