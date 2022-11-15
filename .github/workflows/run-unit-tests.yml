@@ -16,8 +16,8 @@ on:
       with_public_api_check:
         type: boolean
         required: false
-        default: false
-        description: "Set to 'true' to run the SwiftPM public API breakage check. Defaults to 'false'."
+        default: true
+        description: "Set to 'true' to run the SwiftPM public API breakage check. Defaults to 'true'."
       test_filter:
         type: string
         required: false
