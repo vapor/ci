@@ -114,7 +114,6 @@ jobs:
       fail-fast: false
       matrix:
         macos:
-          - macos-11
           - macos-12
         xcode:
           - latest-stable
