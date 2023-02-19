@@ -53,16 +53,6 @@ on:
         required: false
         default: ''
         description: "Additional 'swift test' flags to be applied only when testing on Windows."
-      linux_toolchain_versions:
-        type: string
-        required: false
-        default: >-
-          "swift:5.5-focal",
-          "swift:5.6-focal",
-          "swift:5.7-jammy"
-        # https://github.com/apple/swift-package-manager/issues/5853
-        # "swiftlang/swift:nightly-main-jammy"
-        description: "Set of Swift docker tags to run Linux tests against. Defaults to the current common set."
 
 jobs:
 
@@ -83,7 +73,13 @@ jobs:
   linux-unit:
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(format('{"swiftver":[{0}]}', inputs.linux_toolchain_versions)) }}
+      matrix:
+        swiftver:
+          - swift:5.5-focal
+          - swift:5.6-focal
+          - swift:5.7-jammy
+          # https://github.com/apple/swift-package-manager/issues/5853
+          #- swiftlang/swift:nightly-main-jammy
     runs-on: ubuntu-latest
     container: ${{ matrix.swiftver }}
     steps:
