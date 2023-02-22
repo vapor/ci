@@ -1,5 +1,7 @@
 name: Run pure unit tests
-
+concurrency:
+  group: ${{ github.workflow }}-${{ github.repository }}-${{ github.ref || github.run_id }}
+  cancel-in-progress: true
 on:
   workflow_call:
     inputs:
