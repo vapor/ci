@@ -99,9 +99,8 @@ jobs:
           - swift:5.5-focal
           - swift:5.6-focal
           - swift:5.7-jammy
-          # https://github.com/apple/swift-package-manager/issues/5853
-          #- swiftlang/swift:nightly-5.8-jammy
-          #- swiftlang/swift:nightly-main-jammy
+          - swiftlang/swift:nightly-5.8-jammy
+          - swiftlang/swift:nightly-main-jammy
     runs-on: ubuntu-latest
     container: ${{ matrix.swiftver }}
     steps:
@@ -120,7 +119,8 @@ jobs:
             ${cov} ${san} ${flt} \
             ${{ inputs.extra_flags }} ${{ inputs.extra_flags_linux }}
       - name: Upload code coverage when present
-        if: ${{ inputs.with_coverage }}
+        # https://github.com/apple/swift-package-manager/issues/5853
+        if: ${{ inputs.with_coverage && !contains(matrix.swiftver, 'nightly') }}
         uses: vapor/swift-codecov-action@v0.2
         with:
           package_path: ${{ inputs.subpath }}
