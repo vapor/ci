@@ -139,9 +139,6 @@ jobs:
           - macos-12
         xcode:
           - latest-stable
-        include:
-          - macos: macos-12
-            xcode: latest
     runs-on: ${{ matrix.macos }}
     steps:
       - name: Select appropriate Xcode version
