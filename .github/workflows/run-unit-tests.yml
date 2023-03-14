@@ -64,7 +64,7 @@ on:
 jobs:
 
   api-breakage:
-    if: ${{ inputs.with_public_api_check }}
+    if: ${{ inputs.with_public_api_check && !(github.event.pull_request.draft || false) }}
     runs-on: ubuntu-latest
     container: swift:5.7-jammy
     steps:
@@ -77,7 +77,7 @@ jobs:
           subpath: ${{ inputs.subpath }}
 
   imports-check:
-    if: ${{ inputs.with_removed_exports_check }}
+    if: ${{ inputs.with_removed_exports_check && !(github.event.pull_request.draft || false) }}
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
@@ -92,6 +92,7 @@ jobs:
           swift build --package-path "${pkg_path}" -Xswiftc -DBUILDING_DOCC ${{ inputs.extra_flags }} ${{ inputs.extra_flags_linux }}
 
   linux-unit:
+    if: ${{ !(github.event.pull_request.draft || false) }}
     strategy:
       fail-fast: false
       matrix:
@@ -132,6 +133,7 @@ jobs:
           cc_verbose: true
 
   macos-unit:
+    if: ${{ !(github.event.pull_request.draft || false) }}
     strategy:
       fail-fast: false
       matrix:
@@ -173,7 +175,7 @@ jobs:
 
   windows-unit:
     # Nothing works on Windows yet.
-    if: ${{ false }}
+    if: ${{ false && !(github.event.pull_request.draft || false) }}
     strategy:
       fail-fast: false
       matrix:
