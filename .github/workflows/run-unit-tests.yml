@@ -120,6 +120,8 @@ jobs:
             ${cov} ${san} ${flt} \
             ${{ inputs.extra_flags }} ${{ inputs.extra_flags_linux }}
       - name: Upload code coverage when present
+        # https://github.com/apple/swift-package-manager/issues/5853, fixed in 5.9
+        if: ${{ inputs.with_coverage && !contains(matrix.swiftver, 'nightly-5.8') }}
         uses: vapor/swift-codecov-action@v0.2
         with:
           package_path: ${{ inputs.subpath }}
