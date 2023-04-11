@@ -66,7 +66,7 @@ jobs:
   api-breakage:
     if: ${{ inputs.with_public_api_check && !(github.event.pull_request.draft || false) }}
     runs-on: ubuntu-latest
-    container: swift:5.7-jammy
+    container: swift:5.8-jammy
     steps:
       - name: Check out code
         uses: actions/checkout@v3
@@ -79,6 +79,7 @@ jobs:
   imports-check:
     if: ${{ inputs.with_removed_exports_check && !(github.event.pull_request.draft || false) }}
     runs-on: ubuntu-latest
+    container: swift:5.8-jammy
     steps:
       - name: Check out code
         uses: actions/checkout@v3
@@ -97,10 +98,10 @@ jobs:
       fail-fast: false
       matrix:
         swiftver:
-          - swift:5.5-focal
           - swift:5.6-focal
           - swift:5.7-jammy
-          - swiftlang/swift:nightly-5.8-jammy
+          - swift:5.8-jammy
+          - swiftlang/swift:nightly-5.9-jammy
           - swiftlang/swift:nightly-main-jammy
     runs-on: ubuntu-latest
     container: ${{ matrix.swiftver }}
@@ -120,8 +121,8 @@ jobs:
             ${cov} ${san} ${flt} \
             ${{ inputs.extra_flags }} ${{ inputs.extra_flags_linux }}
       - name: Upload code coverage when present
-        # https://github.com/apple/swift-package-manager/issues/5853, fixed in 5.9
-        if: ${{ inputs.with_coverage && !contains(matrix.swiftver, 'nightly-5.8') }}
+        # https://github.com/apple/swift-package-manager/issues/5853 - broken by 5.8, fixed in 5.9
+        if: ${{ inputs.with_coverage && !contains(matrix.swiftver, '5.8') }}
         uses: vapor/swift-codecov-action@v0.2
         with:
           package_path: ${{ inputs.subpath }}
@@ -180,11 +181,11 @@ jobs:
       fail-fast: false
       matrix:
         swiftver:
-          - 5.7
+          - 5.8
         include:
-          - swiftver: 5.7
-            swiftbranch: swift-5.7-RELEASE
-            swifttag: 5.7-RELEASE
+          - swiftver: 5.8
+            swiftbranch: swift-5.8-RELEASE
+            swifttag: 5.8-RELEASE
     runs-on: windows-latest
     steps:
       - name: Install Windows Swift toolchain
