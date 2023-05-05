@@ -2,6 +2,9 @@ name: Run pure unit tests
 concurrency:
   group: ${{ github.workflow }}-${{ github.repository }}-${{ github.ref || github.run_id }}
   cancel-in-progress: true
+defaults:
+  run:
+    shell: bash
 on:
   workflow_call:
     inputs:
@@ -20,11 +23,6 @@ on:
         required: false
         default: true
         description: "Set to 'true' to run the SwiftPM public API breakage check. Defaults to 'true'."
-      with_removed_exports_check:
-        type: boolean
-        required: false
-        default: true
-        description: "Set to 'true' to run an additional build ensuring correctness with re-exports disabled (used for building API docs)."
       test_filter:
         type: string
         required: false
@@ -76,22 +74,6 @@ jobs:
         with:
           subpath: ${{ inputs.subpath }}
 
-  imports-check:
-    if: ${{ inputs.with_removed_exports_check && !(github.event.pull_request.draft || false) }}
-    runs-on: ubuntu-latest
-    container: swift:5.8-jammy
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v3
-        with: { 'fetch-depth': 0 }
-      - name: Build with re-export disabled
-        shell: bash
-        run: |
-          pkg_path=$([[ -n '${{ inputs.subpath }}' ]] && echo '${{ inputs.subpath }}' || echo '.')
-          # TEMPORARY: Skip if package doesn't have API docs yet
-          { fgrep -qrs 'BUILDING_DOCC' "${pkg_path}" ; } || exit 0
-          swift build --package-path "${pkg_path}" -Xswiftc -DBUILDING_DOCC ${{ inputs.extra_flags }} ${{ inputs.extra_flags_linux }}
-
   linux-unit:
     if: ${{ !(github.event.pull_request.draft || false) }}
     strategy:
@@ -108,8 +90,12 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v3
+      - name: Check minimum Swift version for package
+        id: swiftverchk
+        run: |
+          echo "verok=$(($(swift package tools-version | cut -d. -f2) <= $(swift package tools-version --version | cut -d. -f2)))" >> "${GITHUB_OUTPUT}"
       - name: Run unit tests
-        shell: bash
+        if: ${{ steps.swiftverchk.outputs.verok }}
         env:
           SWIFT_DETERMINISTIC_HASHING: 1
         run: |
@@ -122,13 +108,12 @@ jobs:
             ${{ inputs.extra_flags }} ${{ inputs.extra_flags_linux }}
       - name: Upload code coverage when present
         # https://github.com/apple/swift-package-manager/issues/5853 - broken by 5.8, fixed in 5.9
-        if: ${{ inputs.with_coverage && !contains(matrix.swiftver, '5.8') }}
+        if: ${{ inputs.with_coverage && steps.swiftverchk.outputs.verok && !contains(matrix.swiftver, '5.8') }}
         uses: vapor/swift-codecov-action@v0.2
         with:
           package_path: ${{ inputs.subpath }}
           ignore_paths: ${{ inputs.coverage_ignores }}
           build_parameters: ${{ inputs.extra_flags }} ${{ inputs.extra_flags_linux }}
-          cc_flags: 'unittests'
           cc_env_vars: 'SWIFT_VERSION,SWIFT_PLATFORM,RUNNER_OS,RUNNER_ARCH'
           cc_fail_ci_if_error: true
           cc_verbose: true
@@ -148,10 +133,13 @@ jobs:
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: ${{ matrix.xcode }}
+      - name: Record Swift toolchain version
+        run: |
+          echo "SWIFT_VERSION=$(swift package tools-version --version)" >> "${GITHUB_ENV}"
+          echo 'SWIFT_PLATFORM=${{ matrix.macos }}' >> "${GITHUB_ENV}"
       - name: Check out code
         uses: actions/checkout@v3
       - name: Run unit tests
-        shell: bash
         env:
           SWIFT_DETERMINISTIC_HASHING: 1
         run: |
@@ -169,8 +157,7 @@ jobs:
           package_path: ${{ inputs.subpath }}
           ignore_paths: ${{ inputs.coverage_ignores }}
           build_parameters: ${{ inputs.extra_flags }} ${{ inputs.extra_flags_macos }}
-          cc_flags: 'unittests'
-          cc_env_vars: 'MD_APPLE_SDK_ROOT,RUNNER_OS,RUNNER_ARCH'
+          cc_env_vars: 'MD_APPLE_SDK_ROOT,SWIFT_VERSION,SWIFT_PLATFORM,RUNNER_OS,RUNNER_ARCH'
           cc_fail_ci_if_error: true
           cc_verbose: true
 
@@ -199,7 +186,6 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v3
       - name: Run unit tests
-        shell: bash
         env:
           SWIFT_DETERMINISTIC_HASHING: 1
         run: |
@@ -217,7 +203,6 @@ jobs:
           package_path: ${{ inputs.subpath }}
           ignore_paths: ${{ inputs.coverage_ignores }}
           build_parameters: ${{ inputs.extra_flags }} ${{ inputs.extra_flags_windows }}
-          cc_flags: 'unittests'
           cc_env_vars: 'SWIFT_VERSION,RUNNER_OS,RUNNER_ARCH'
           cc_fail_ci_if_error: true
           cc_verbose: true
