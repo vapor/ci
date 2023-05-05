@@ -1,7 +1,7 @@
 name: Run pure unit tests
-concurrency:
-  group: ${{ github.workflow }}-${{ github.repository }}-${{ github.ref || github.run_id }}-${{ github.job }}
-  cancel-in-progress: true
+#concurrency:
+#  group: ${{ github.workflow }}-${{ github.repository }}-${{ github.ref || github.run_id }}-${{ github.job }}
+#  cancel-in-progress: true
 defaults:
   run:
     shell: bash
