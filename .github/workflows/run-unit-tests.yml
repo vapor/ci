@@ -109,8 +109,7 @@ jobs:
           ignore_paths: ${{ inputs.coverage_ignores }}
           build_parameters: ${{ inputs.extra_flags }} ${{ inputs.extra_flags_linux }}
           cc_env_vars: 'SWIFT_VERSION,SWIFT_PLATFORM,RUNNER_OS,RUNNER_ARCH'
-          cc_fail_ci_if_error: true
-          cc_verbose: true
+          cc_fail_ci_if_error: false
 
   macos-unit:
     if: ${{ !(github.event.pull_request.draft || false) }}
@@ -152,8 +151,7 @@ jobs:
           ignore_paths: ${{ inputs.coverage_ignores }}
           build_parameters: ${{ inputs.extra_flags }} ${{ inputs.extra_flags_macos }}
           cc_env_vars: 'MD_APPLE_SDK_ROOT,SWIFT_VERSION,SWIFT_PLATFORM,RUNNER_OS,RUNNER_ARCH'
-          cc_fail_ci_if_error: true
-          cc_verbose: true
+          cc_fail_ci_if_error: false
 
   windows-unit:
     # Nothing works on Windows yet.
@@ -198,5 +196,5 @@ jobs:
           ignore_paths: ${{ inputs.coverage_ignores }}
           build_parameters: ${{ inputs.extra_flags }} ${{ inputs.extra_flags_windows }}
           cc_env_vars: 'SWIFT_VERSION,RUNNER_OS,RUNNER_ARCH'
-          cc_fail_ci_if_error: true
-          cc_verbose: true
+          cc_fail_ci_if_error: false
+
