@@ -90,12 +90,7 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v3
-      - name: Check minimum Swift version for package
-        id: swiftverchk
-        run: |
-          echo "verok=$(($(swift package tools-version | cut -d. -f2) <= $(swift package tools-version --version | cut -d. -f2)))" >> "${GITHUB_OUTPUT}"
       - name: Run unit tests
-        if: ${{ steps.swiftverchk.outputs.verok == 1 }}
         env:
           SWIFT_DETERMINISTIC_HASHING: 1
         run: |
@@ -107,8 +102,7 @@ jobs:
             ${cov} ${san} ${flt} \
             ${{ inputs.extra_flags }} ${{ inputs.extra_flags_linux }}
       - name: Upload code coverage when present
-        # https://github.com/apple/swift-package-manager/issues/5853 - broken by 5.8, fixed in 5.9
-        if: ${{ inputs.with_coverage && steps.swiftverchk.outputs.verok == 1 && !contains(matrix.swiftver, '5.8') }}
+        if: ${{ inputs.with_coverage }}
         uses: vapor/swift-codecov-action@v0.2
         with:
           package_path: ${{ inputs.subpath }}
