@@ -28,6 +28,7 @@ runs:
   steps:
       # https://github.com/actions/checkout/issues/766
       - name: Mark the Git workspace safe
+        shell: bash
         run: git config --global --add safe.directory ${GITHUB_WORKSPACE}
 
       - name: Perform API breakage check
