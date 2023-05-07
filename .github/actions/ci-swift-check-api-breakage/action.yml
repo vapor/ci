@@ -40,7 +40,7 @@ runs:
           targets='${{ inputs.targets }}'
           pkgpath='${{ inputs.pkgpath }}'
           
-          : ${allowlist_path:='.api-breakage/allowlist-${{ github.ref_type }}-${{ github.ref_name }}.txt'}
+          : ${allowlist_path:='.api-breakage/allowlist-${{ github.ref_type }}-${{ github.head_ref || '' }}.txt'}
           
           swift package diagnose-api-breaking-changes \
             ${pkgpath:+'--package-path' "${pkgpath}"} \
