@@ -5,41 +5,45 @@ inputs:
   baseline_ref:
     required: false
     default: 'origin/main'
-    description: "A git ref to use as the baseline API"
+    description: "A git ref to use as the baseline API."
   allowlist_path:
     required: false
     default: ''
-    description: "A repo-relative path containing API breakage diagnostics to be ignored"
+    description: "A repo-relative path containing API breakage diagnostics to be ignored."
   extra_flags:
     required: false
     default: ''
     description: "Additional 'swift package diagnose-api-breaking-changes' flags."
-  subpath:
+  targets:
     required: false
     default: ''
-    description: "Run the API check from a subpath of the repository. Used for testing the workflow."
+    description: "Comma-separated list of specific targets to diagnose."
+  pkgpath:
+    required: false
+    default: ''
+    description: "Run the API check at a given path rather than the current directory."
 
 runs:
   using: composite
   steps:
       # https://github.com/actions/checkout/issues/766
       - name: Mark the Git workspace safe
-        shell: bash
         run: git config --global --add safe.directory ${GITHUB_WORKSPACE}
 
       - name: Perform API breakage check
         shell: bash
         run: |
-          if [[ -n '${{ inputs.allowlist_path }}' ]]; then
-            allowlist_option='--breakage-allowlist-path ${{ inputs.allowlist_path }}'
-          fi
-          if [[ -n '${{ inputs.subpath }}' ]]; then
-            pkg_path_option='--package-path ${{ inputs.subpath }}'
-          fi
+          baseline_ref='${{ inputs.baseline_ref }}'
+          allowlist_path='${{ inputs.allowlist_path }}'
+          extra_flags='${{ inputs.extra_flags }}'
+          targets='${{ inputs.targets }}'
+          pkgpath='${{ inputs.pkgpath }}'
+          
+          : ${allowlist_path:='.api-breakage/allowlist-${{ github.ref_type }}-${{ github.ref_name }}.txt'}
           
           swift package diagnose-api-breaking-changes \
-            ${pkg_path_option} \
-            ${allowlist_option} \
-            --regenerate-baseline \
-            ${{inputs.extra_flags}} \
-            ${{inputs.baseline_ref}}
+            ${pkgpath:+'--package-path' "${pkgpath}"} \
+            ${baseline_ref} \
+            ${extra_flags} \
+            ${allowlist_path:+'--breakage-allowlist-path' "${allowlist_path}"} \
+            ${targets_option:+'--targets' ${targets//,/ }}
