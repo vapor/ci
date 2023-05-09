@@ -72,7 +72,7 @@ jobs:
       - name: Run API breakage check action
         uses: vapor/ci/.github/actions/ci-swift-check-api-breakage@reusable-workflows
         with:
-          subpath: ${{ inputs.subpath }}
+          pkgpath: ${{ inputs.subpath }}
 
   linux-unit:
     if: ${{ !(github.event.pull_request.draft || false) }}
