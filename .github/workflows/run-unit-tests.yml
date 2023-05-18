@@ -158,48 +158,48 @@ jobs:
           cc_env_vars: 'MD_APPLE_SDK_ROOT,SWIFT_VERSION,SWIFT_PLATFORM,RUNNER_OS,RUNNER_ARCH'
           cc_fail_ci_if_error: false
 
-  windows-unit:
-    # Nothing works on Windows yet.
-    if: ${{ false && !(github.event.pull_request.draft || false) }}
-    strategy:
-      fail-fast: false
-      matrix:
-        swiftver:
-          - 5.8
-        include:
-          - swiftver: 5.8
-            swiftbranch: swift-5.8-RELEASE
-            swifttag: 5.8-RELEASE
-    runs-on: windows-latest
-    steps:
-      - name: Install Windows Swift toolchain
-        uses: compnerd/gha-setup-swift@main
-        with:
-          branch: ${{ matrix.swiftbranch }}
-          tag: ${{ matrix.swifttag }}
-      - name: Track installed Swift version
-        shell: bash
-        run: echo 'SWIFT_VERSION=${{matrix.swiftbranch }}/${{ matrix.swifttag }}' >>"${GITHUB_ENV}"
-      - name: Check out code
-        uses: actions/checkout@v3
-      - name: Run unit tests
-        env:
-          SWIFT_DETERMINISTIC_HASHING: 1
-        run: |
-          cov=$([[ '${{ format('{0}', inputs.with_coverage) }}' == 'true' ]] && echo '--enable-code-coverage' || true)
-          san=$([[ '${{ format('{0}', inputs.with_tsan) }}' == 'true' ]] && echo '--sanitize=thread' || true)
-          flt=$([[ -n '${{ inputs.test_filter }}' ]] && echo '--filter=${{ inputs.test_filter }}' || true)
-          pth=$([[ -n '${{ inputs.subpath }}' ]] && echo '--package-path ${{ inputs.subpath }}' || true)
-          swift test ${pth} \
-            ${cov} ${san} ${flt} \
-            ${{ inputs.extra_flags }} ${{ inputs.extra_flags_windows }}
-      - name: Upload code coverage when present
-        if: ${{ inputs.with_coverage }}
-        uses: vapor/swift-codecov-action@v0.2
-        with:
-          package_path: ${{ inputs.subpath }}
-          ignore_paths: ${{ inputs.coverage_ignores }}
-          build_parameters: ${{ inputs.extra_flags }} ${{ inputs.extra_flags_windows }}
-          cc_env_vars: 'SWIFT_VERSION,RUNNER_OS,RUNNER_ARCH'
-          cc_fail_ci_if_error: false
-
+#   windows-unit:
+#     # Nothing works on Windows yet.
+#     if: ${{ false && !(github.event.pull_request.draft || false) }}
+#     strategy:
+#       fail-fast: false
+#       matrix:
+#         swiftver:
+#           - 5.8
+#         include:
+#           - swiftver: 5.8
+#             swiftbranch: swift-5.8-RELEASE
+#             swifttag: 5.8-RELEASE
+#     runs-on: windows-latest
+#     steps:
+#       - name: Install Windows Swift toolchain
+#         uses: compnerd/gha-setup-swift@main
+#         with:
+#           branch: ${{ matrix.swiftbranch }}
+#           tag: ${{ matrix.swifttag }}
+#       - name: Track installed Swift version
+#         shell: bash
+#         run: echo 'SWIFT_VERSION=${{matrix.swiftbranch }}/${{ matrix.swifttag }}' >>"${GITHUB_ENV}"
+#       - name: Check out code
+#         uses: actions/checkout@v3
+#       - name: Run unit tests
+#         env:
+#           SWIFT_DETERMINISTIC_HASHING: 1
+#         run: |
+#           cov=$([[ '${{ format('{0}', inputs.with_coverage) }}' == 'true' ]] && echo '--enable-code-coverage' || true)
+#           san=$([[ '${{ format('{0}', inputs.with_tsan) }}' == 'true' ]] && echo '--sanitize=thread' || true)
+#           flt=$([[ -n '${{ inputs.test_filter }}' ]] && echo '--filter=${{ inputs.test_filter }}' || true)
+#           pth=$([[ -n '${{ inputs.subpath }}' ]] && echo '--package-path ${{ inputs.subpath }}' || true)
+#           swift test ${pth} \
+#             ${cov} ${san} ${flt} \
+#             ${{ inputs.extra_flags }} ${{ inputs.extra_flags_windows }}
+#       - name: Upload code coverage when present
+#         if: ${{ inputs.with_coverage }}
+#         uses: vapor/swift-codecov-action@v0.2
+#         with:
+#           package_path: ${{ inputs.subpath }}
+#           ignore_paths: ${{ inputs.coverage_ignores }}
+#           build_parameters: ${{ inputs.extra_flags }} ${{ inputs.extra_flags_windows }}
+#           cc_env_vars: 'SWIFT_VERSION,RUNNER_OS,RUNNER_ARCH'
+#           cc_fail_ci_if_error: false
+# 
