@@ -17,8 +17,8 @@ inputs:
   targets:
     required: false
     default: ''
-    description: "Comma-separated list of specific targets to diagnose."
-  pkgpath:
+    description: "Space-separated list of specific targets to diagnose."
+  package_root:
     required: false
     default: ''
     description: "Run the API check at a given path rather than the current directory."
@@ -28,23 +28,16 @@ runs:
   steps:
       # https://github.com/actions/checkout/issues/766
       - name: Mark the Git workspace safe
-        shell: bash
         run: git config --global --add safe.directory ${GITHUB_WORKSPACE}
 
       - name: Perform API breakage check
-        shell: bash
+        env:
+          TARGETS:        ${{ inputs.targets != '' && format('--targets {0}', inputs.targets) || '' }}
+          PACKAGE_ROOT:   ${{ inputs.package_root != '' && format('--package-path {0}', inputs.package_root) || '' }}
+          ALLOWLIST_PATH: ${{ inputs.allowlist_path != '' && inputs.allowlist_path ||
+                              format('.api-breakage/allowlist-{0}-{1}.txt', github.ref_type, github.head_ref || '') }}
+          BASELINE_REF:   ${{ inputs.baseline_ref }}
+          EXTRA_FLAGS:    ${{ inputs.extra_flags }}
         run: |
-          baseline_ref='${{ inputs.baseline_ref }}'
-          allowlist_path='${{ inputs.allowlist_path }}'
-          extra_flags='${{ inputs.extra_flags }}'
-          targets='${{ inputs.targets }}'
-          pkgpath='${{ inputs.pkgpath }}'
-          
-          : ${allowlist_path:='.api-breakage/allowlist-${{ github.ref_type }}-${{ github.head_ref || '' }}.txt'}
-          
-          swift package diagnose-api-breaking-changes \
-            ${pkgpath:+'--package-path' "${pkgpath}"} \
-            ${baseline_ref} \
-            ${extra_flags} \
-            ${allowlist_path:+'--breakage-allowlist-path' "${allowlist_path}"} \
-            ${targets_option:+'--targets' ${targets//,/ }}
+          swift package diagnose-api-breaking-changes ${PACKAGE_ROOT} \
+            ${BASELINE_REF} ${EXTRA_FLAGS} ${TARGETS} --breakage-allowlist-path ${ALLOWLIST_PATH}

@@ -1,10 +1,4 @@
 name: Run pure unit tests
-#concurrency:
-#  group: ${{ github.workflow }}-${{ github.repository }}-${{ github.ref || github.run_id }}-${{ github.job }}
-#  cancel-in-progress: true
-defaults:
-  run:
-    shell: bash
 on:
   workflow_call:
     inputs:
@@ -28,11 +22,11 @@ on:
         required: false
         default: ''
         description: "Apply a --filter to the tests that will be run."
-      subpath:
+      package_root:
         type: string
         required: false
         default: ''
-        description: "Run tests and upload coverage from a subpath of the repository. Used for testing the workflow."
+        description: "Specifies a subpath of the checkout to run tests and upload coverage from."
       coverage_ignores:
         type: string
         required: false
@@ -62,7 +56,7 @@ on:
 jobs:
 
   api-breakage:
-    if: ${{ inputs.with_public_api_check && !(github.event.pull_request.draft || false) }}
+    if: inputs.with_public_api_check && !(github.event.pull_request.draft || false)
     runs-on: ubuntu-latest
     container: swift:5.8-jammy
     steps:
@@ -72,134 +66,128 @@ jobs:
       - name: Run API breakage check action
         uses: vapor/ci/.github/actions/ci-swift-check-api-breakage@reusable-workflows
         with:
-          pkgpath: ${{ inputs.subpath }}
+          package_root: ${{ inputs.package_root }}
 
   linux-unit:
-    if: ${{ !(github.event.pull_request.draft || false) }}
+    if: !(github.event.pull_request.draft || false)
     strategy:
       fail-fast: false
       matrix:
-        swiftver:
+        swift-image:
           - swift:5.6-focal
           - swift:5.7-jammy
           - swift:5.8-jammy
           - swiftlang/swift:nightly-5.9-jammy
           - swiftlang/swift:nightly-main-jammy
     runs-on: ubuntu-latest
-    container: ${{ matrix.swiftver }}
+    container: ${{ matrix.swift-image }}
     steps:
       - name: Check out code
         uses: actions/checkout@v3
       - name: Check minimum Swift version for package
-        id: swiftverchk
+        id: swift-check
         run: |
-          echo "verok=$(($(swift package tools-version | cut -d. -f2) <= $(swift package tools-version --version | cut -d. -f2)))" >> "${GITHUB_OUTPUT}"
+          echo $(swift package tools-version) $(swift package --version | cut -c31-) | { \
+            IFS=. read -r pkmajor pkminor pkpatch tcmajor tcminor tcpatch ; \
+            pkver=$(( $pkmajor * 10000 + $pkminor * 100 + $pkpatch )) ; \
+            tcver=$(( $tcmajor * 10000 + $tcminor * 100 + $tcpatch )) ; \
+            echo "ok=$([ $pkver -le $tcver ] && echo true || echo false)" >>"${GITHUB_OUTPUT}" ; \
+          }
       - name: Run unit tests
-        if: ${{ steps.swiftverchk.outputs.verok == 1 }}
+        if: steps.swift-check.outputs.ok
         env:
           SWIFT_DETERMINISTIC_HASHING: 1
+          WITH_COVERAGE: ${{ inputs.with_coverage && '--enable-code-coverage' || '' }}
+          WITH_TSAN:     ${{ $inputs.with_tsan && '--sanitize=thread' || '' }}
+          TEST_FILTER:   ${{ inputs.test_filter != '' && format('--filter={0}', inputs.test_filter) || '' }}
+          PACKAGE_ROOT:  ${{ inputs.package_root != '' && format('--package-path {0}', inputs.package_root) || '' }}
+          EXTRA_FLAGS:   ${{ format('{0} {1}', inputs.extra_flags, inputs.extra_flags_linux) }}
         run: |
-          cov=$([[ '${{ format('{0}', inputs.with_coverage) }}' == 'true' ]] && echo '--enable-code-coverage' || true)
-          san=$([[ '${{ format('{0}', inputs.with_tsan) }}' == 'true' ]] && echo '--sanitize=thread' || true)
-          flt=$([[ -n '${{ inputs.test_filter }}' ]] && echo '--filter=${{ inputs.test_filter }}' || true)
-          pth=$([[ -n '${{ inputs.subpath }}' ]] && echo '--package-path ${{ inputs.subpath }}' || true)
-          swift test ${pth} \
-            ${cov} ${san} ${flt} \
-            ${{ inputs.extra_flags }} ${{ inputs.extra_flags_linux }}
+          swift test ${PACKAGE_ROOT} ${WITH_COVERAGE} ${WITH_TSAN} ${TEST_FILTER} ${EXTRA_FLAGS}
       - name: Upload code coverage when present
-        if: ${{ inputs.with_coverage && steps.swiftverchk.outputs.verok == 1 }}
+        if: inputs.with_coverage && steps.swift-check.outputs.ok
         uses: vapor/swift-codecov-action@v0.2
         with:
-          package_path: ${{ inputs.subpath }}
-          ignore_paths: ${{ inputs.coverage_ignores }}
+          package_path:     ${{ inputs.package_root }}
+          ignore_paths:     ${{ inputs.coverage_ignores }}
           build_parameters: ${{ inputs.extra_flags }} ${{ inputs.extra_flags_linux }}
-          cc_env_vars: 'SWIFT_VERSION,SWIFT_PLATFORM,RUNNER_OS,RUNNER_ARCH'
-          cc_fail_ci_if_error: false
+          cc_env_vars:      'SWIFT_VERSION,SWIFT_PLATFORM,RUNNER_OS,RUNNER_ARCH'
 
   macos-unit:
-    if: ${{ !(github.event.pull_request.draft || false) }}
+    if: !(github.event.pull_request.draft || false)
     strategy:
       fail-fast: false
       matrix:
-        macos:
+        macos-version:
           - macos-13
-        xcode:
+        xcode-version:
           - latest-stable
-    runs-on: ${{ matrix.macos }}
+    runs-on: ${{ matrix.macos-version }}
     steps:
       - name: Select appropriate Xcode version
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: ${{ matrix.xcode }}
-      - name: Record Swift toolchain version
-        run: |
-          echo "SWIFT_VERSION=$(swift package tools-version --version)" >> "${GITHUB_ENV}"
-          echo 'SWIFT_PLATFORM=${{ matrix.macos }}' >> "${GITHUB_ENV}"
+          xcode-version: ${{ matrix.xcode-version }}
       - name: Check out code
         uses: actions/checkout@v3
       - name: Run unit tests
         env:
           SWIFT_DETERMINISTIC_HASHING: 1
+          WITH_COVERAGE: ${{ inputs.with_coverage && '--enable-code-coverage' || '' }}
+          WITH_TSAN:     ${{ $inputs.with_tsan && '--sanitize=thread' || '' }}
+          TEST_FILTER:   ${{ inputs.test_filter != '' && format('--filter={0}', inputs.test_filter) || '' }}
+          PACKAGE_ROOT:  ${{ inputs.package_root != '' && format('--package-path {0}', inputs.package_root) || '' }}
+          EXTRA_FLAGS:   ${{ format('{0} {1}', inputs.extra_flags, inputs.extra_flags_macos) }}
         run: |
-          cov=$([[ '${{ format('{0}', inputs.with_coverage) }}' == 'true' ]] && echo '--enable-code-coverage' || true)
-          san=$([[ '${{ format('{0}', inputs.with_tsan) }}' == 'true' ]] && echo '--sanitize=thread' || true)
-          flt=$([[ -n '${{ inputs.test_filter }}' ]] && echo '--filter=${{ inputs.test_filter }}' || true)
-          pth=$([[ -n '${{ inputs.subpath }}' ]] && echo '--package-path ${{ inputs.subpath }}' || true)
-          swift test ${pth} \
-            ${cov} ${san} ${flt} \
-            ${{ inputs.extra_flags }} ${{ inputs.extra_flags_macos }}
+          swift test ${PACKAGE_ROOT} ${WITH_COVERAGE} ${WITH_TSAN} ${TEST_FILTER} ${EXTRA_FLAGS}
       - name: Upload code coverage when present
-        if: ${{ inputs.with_coverage }}
+        if: inputs.with_coverage
         uses: vapor/swift-codecov-action@v0.2
         with:
-          package_path: ${{ inputs.subpath }}
-          ignore_paths: ${{ inputs.coverage_ignores }}
+          package_path:     ${{ inputs.package_root }}
+          ignore_paths:     ${{ inputs.coverage_ignores }}
           build_parameters: ${{ inputs.extra_flags }} ${{ inputs.extra_flags_macos }}
-          cc_env_vars: 'MD_APPLE_SDK_ROOT,SWIFT_VERSION,SWIFT_PLATFORM,RUNNER_OS,RUNNER_ARCH'
-          cc_fail_ci_if_error: false
+          cc_env_vars:      'MD_APPLE_SDK_ROOT,RUNNER_OS,RUNNER_ARCH'
 
 #   windows-unit:
-#     # Nothing works on Windows yet.
-#     if: ${{ false && !(github.event.pull_request.draft || false) }}
+#     if: !(github.event.pull_request.draft || false)
 #     strategy:
 #       fail-fast: false
 #       matrix:
-#         swiftver:
+#         swift-version:
+#           - 5.6
+#           - 5.7
 #           - 5.8
+#           - 5.9
 #         include:
-#           - swiftver: 5.8
-#             swiftbranch: swift-5.8-RELEASE
-#             swifttag: 5.8-RELEASE
+#           - { swift-version: 5.6, swift-branch: swift-5.6.3-RELEASE, swift-tag: 5.6.3-RELEASE }
+#           - { swift-version: 5.7, swift-branch: swift-5.7.3-RELEASE, swift-tag: 5.7.3-RELEASE }
+#           - { swift-version: 5.8, swift-branch: swift-5.8.1-RELEASE, swift-tag: 5.8.1-RELEASE }
+#           - { swift-version: 5.9, swift-branch: swift-5.9-branch, swift-tag: 5.9-DEVELOPMENT-SNAPSHOT-2023-05-11-a }
 #     runs-on: windows-latest
 #     steps:
 #       - name: Install Windows Swift toolchain
 #         uses: compnerd/gha-setup-swift@main
 #         with:
-#           branch: ${{ matrix.swiftbranch }}
-#           tag: ${{ matrix.swifttag }}
-#       - name: Track installed Swift version
-#         shell: bash
-#         run: echo 'SWIFT_VERSION=${{matrix.swiftbranch }}/${{ matrix.swifttag }}' >>"${GITHUB_ENV}"
+#           branch: ${{ matrix.swift-branch }}
+#           tag: ${{ matrix.swift-tag }}
 #       - name: Check out code
 #         uses: actions/checkout@v3
 #       - name: Run unit tests
 #         env:
 #           SWIFT_DETERMINISTIC_HASHING: 1
+#           WITH_COVERAGE: ${{ inputs.with_coverage && '--enable-code-coverage' || '' }}
+#           WITH_TSAN:     ${{ $inputs.with_tsan && '--sanitize=thread' || '' }}
+#           TEST_FILTER:   ${{ inputs.test_filter != '' && format('--filter={0}', inputs.test_filter) || '' }}
+#           PACKAGE_ROOT:  ${{ inputs.package_root != '' && format('--package-path {0}', inputs.package_root) || '' }}
+#           EXTRA_FLAGS:   ${{ format('{0} {1}', inputs.extra_flags, inputs.extra_flags_windows) }}
 #         run: |
-#           cov=$([[ '${{ format('{0}', inputs.with_coverage) }}' == 'true' ]] && echo '--enable-code-coverage' || true)
-#           san=$([[ '${{ format('{0}', inputs.with_tsan) }}' == 'true' ]] && echo '--sanitize=thread' || true)
-#           flt=$([[ -n '${{ inputs.test_filter }}' ]] && echo '--filter=${{ inputs.test_filter }}' || true)
-#           pth=$([[ -n '${{ inputs.subpath }}' ]] && echo '--package-path ${{ inputs.subpath }}' || true)
-#           swift test ${pth} \
-#             ${cov} ${san} ${flt} \
-#             ${{ inputs.extra_flags }} ${{ inputs.extra_flags_windows }}
+#           swift test ${PACKAGE_ROOT} ${WITH_COVERAGE} ${WITH_TSAN} ${TEST_FILTER} ${EXTRA_FLAGS}
 #       - name: Upload code coverage when present
-#         if: ${{ inputs.with_coverage }}
+#         if: inputs.with_coverage
 #         uses: vapor/swift-codecov-action@v0.2
 #         with:
-#           package_path: ${{ inputs.subpath }}
-#           ignore_paths: ${{ inputs.coverage_ignores }}
+#           package_path:     ${{ inputs.package_root }}
+#           ignore_paths:     ${{ inputs.coverage_ignores }}
 #           build_parameters: ${{ inputs.extra_flags }} ${{ inputs.extra_flags_windows }}
-#           cc_env_vars: 'SWIFT_VERSION,RUNNER_OS,RUNNER_ARCH'
-#           cc_fail_ci_if_error: false
-# 
+#           cc_env_vars:      'SWIFT_VERSION,RUNNER_OS,RUNNER_ARCH'
