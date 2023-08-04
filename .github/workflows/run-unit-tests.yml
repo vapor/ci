@@ -73,7 +73,7 @@ jobs:
           PACKAGE_ROOT: ${{ inputs.package_root != '' && format('--package-path={0}', inputs.package_root) || '' }}
           EXTRA_FLAGS:  ${{ inputs.extra_flags }}
         run: |
-          swift test ${PACKAGE_ROOT} ${TEST_FILTER} ${EXTRA_FLAGS}
+          swift test ${PACKAGE_ROOT} ${TEST_FILTER} --enable-code-coverage ${EXTRA_FLAGS}
       - name: Upload coverage data
         uses: vapor/swift-codecov-action@v0.2
         with:
