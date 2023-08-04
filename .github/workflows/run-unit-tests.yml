@@ -82,7 +82,7 @@ jobs:
           build_parameters: ${{ inputs.extra_flags }}
   
   gh-codeql:
-    if: ${{ inputs.with_gh_codeql && github.event == 'push' }}
+    if: ${{ inputs.with_gh_codeql && github.event_name == 'push' }}
     strategy:
       matrix:
         runner_os:
