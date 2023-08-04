@@ -5,7 +5,7 @@ on:
       with_coverage:
         type: boolean
         required: false
-        default: false
+        default: true
         description: "Set to 'true' to collect and upload code coverage data. Defaults to 'false'."
       with_tsan:
         type: boolean
