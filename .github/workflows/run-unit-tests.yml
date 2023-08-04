@@ -87,12 +87,17 @@ jobs:
       matrix:
         runner_os:
           - ubuntu-latest
-          - macos-latest
+          - macos-13
           #- windows-latest
     runs-on: ${{ matrix.runner_os }}
     permissions:
       security-events: write
     steps:
+      - name: Select appropriate Xcode version
+        if: ${{ startsWith(matrix.runner_os, 'macos') }}
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest
       - name: Check out code
         uses: actions/checkout@v3
       - name: Initialize CodeQL
