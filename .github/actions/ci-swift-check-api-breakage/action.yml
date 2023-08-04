@@ -39,4 +39,4 @@ runs:
           EXTRA_FLAGS:    ${{ inputs.extra_flags }}
         run: |
           swift package "${PACKAGE_ROOT}" diagnose-api-breaking-changes \
-              "${BASELINE_REF}" ${EXTRA_FLAGS} "${TARGETS}" "${ALLOWLIST_PATH}"
+              "${BASELINE_REF}" ${EXTRA_FLAGS} ${TARGETS} ${ALLOWLIST_PATH}
