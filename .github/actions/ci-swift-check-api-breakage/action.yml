@@ -32,12 +32,11 @@ runs:
 
       - name: Perform API breakage check
         env:
-          TARGETS:        ${{ inputs.targets != '' && format('--targets {0}', inputs.targets) || '' }}
-          PACKAGE_ROOT:   ${{ inputs.package_root != '' && format('--package-path {0}', inputs.package_root) || '' }}
-          ALLOWLIST_PATH: ${{ inputs.allowlist_path != '' && inputs.allowlist_path ||
-                              format('.api-breakage/allowlist-{0}-{1}.txt', github.ref_type, github.head_ref || '') }}
+          TARGETS:        ${{ inputs.targets != ''        && format('--targets={0}', inputs.targets) || '' }}
+          PACKAGE_ROOT:   ${{ inputs.package_root != ''   && format('--package-path={0}', inputs.package_root) || '' }}
+          ALLOWLIST_PATH: ${{ inputs.allowlist_path != '' && format('--breakage-allowlist-path={0}', inputs.allowlist_path) || '' }}
           BASELINE_REF:   ${{ inputs.baseline_ref }}
           EXTRA_FLAGS:    ${{ inputs.extra_flags }}
         run: |
-          swift package diagnose-api-breaking-changes ${PACKAGE_ROOT} \
-            ${BASELINE_REF} ${EXTRA_FLAGS} ${TARGETS} --breakage-allowlist-path ${ALLOWLIST_PATH}
+          swift package "${PACKAGE_ROOT}" diagnose-api-breaking-changes \
+              "${BASELINE_REF}" ${EXTRA_FLAGS} "${TARGETS}" "${ALLOWLIST_PATH}"
