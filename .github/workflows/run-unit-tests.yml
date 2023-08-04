@@ -137,7 +137,7 @@ jobs:
             echo "ok=$([ $pkver -le $tcver ] && echo true || echo false)" >>"${GITHUB_OUTPUT}" ; \
           }
       - name: Run unit tests
-        if: ${{ steps.swift-check.outputs.ok }}
+        if: ${{ steps.swift-check.outputs.ok == 'true' }}
         env:
           SWIFT_DETERMINISTIC_HASHING: 1
           WITH_TSAN:     ${{ inputs.with_tsan && '--sanitize=thread' || '' }}
