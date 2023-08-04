@@ -96,7 +96,7 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v3
       - name: Initialize CodeQL
-        uses: github/codeql-actions/init@v2
+        uses: github/codeql-action/init@v2
         with:
           languages: swift
       - name: Perform build
