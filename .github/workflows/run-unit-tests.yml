@@ -17,6 +17,11 @@ on:
         required: false
         default: true
         description: "Set to 'true' to run the SwiftPM public API breakage check. Defaults to 'true'."
+      with_gh_codeql:
+        type: boolean
+        required: false
+        default: true
+        description: "Set to 'true' to run CodeQL checks. Defaults to 'true'."
       test_filter:
         type: string
         required: false
@@ -37,28 +42,14 @@ on:
         required: false
         default: ''
         description: "Additional 'swift test' flags to be applied on when testing on all platforms."
-      extra_flags_linux:
-        type: string
-        required: false
-        default: ''
-        description: "Additional 'swift test' flags to be applied only when testing on Linux."
-      extra_flags_macos:
-        type: string
-        required: false
-        default: ''
-        description: "Additional 'swift test' flags to be applied only when testing on macOS."
-      extra_flags_windows:
-        type: string
-        required: false
-        default: ''
-        description: "Additional 'swift test' flags to be applied only when testing on Windows."
 
 jobs:
-
+  
+  # Use "jammy" docker tag for "latest" Swift release.
   api-breakage:
-    if: inputs.with_public_api_check && !(github.event.pull_request.draft || false)
+    if: ${{ inputs.with_public_api_check && !(github.event.pull_request.draft || false) }}
     runs-on: ubuntu-latest
-    container: swift:5.8-jammy
+    container: swift:jammy
     steps:
       - name: Check out code
         uses: actions/checkout@v3
@@ -67,9 +58,58 @@ jobs:
         uses: vapor/ci/.github/actions/ci-swift-check-api-breakage@reusable-workflows
         with:
           package_root: ${{ inputs.package_root }}
-
+  
+  # Use "jammy" docker tag for "latest" Swift release.
+  code-coverage:
+    if: ${{ inputs.with_coverage && !(github.event.pull_request.draft || false) }}
+    runs-on: ubuntu-latest
+    container: swift:jammy
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+      - name: Run unit tests for coverage data
+        env:
+          TEST_FILTER:  ${{ inputs.test_filter != '' && format('--filter={0}', inputs.test_filter) || '' }}
+          PACKAGE_ROOT: ${{ inputs.package_root != '' && format('--package-path={0}', inputs.package_root) || '' }}
+          EXTRA_FLAGS:  ${{ inputs.extra_flags }}
+        run: |
+          swift test "${PACKAGE_ROOT}" "${TEST_FILTER}" ${EXTRA_FLAGS}
+      - name: Upload coverage data
+        uses: vapor/swift-codecov-action@v0.2
+        with:
+          package_path:     ${{ inputs.package_root }}
+          ignore_paths:     ${{ inputs.coverage_ignores }}
+          build_parameters: ${{ inputs.extra_flags }}
+  
+  gh-codeql:
+    if: ${{ inputs.with_gh_codeql && github.event == 'push' }}
+    strategy:
+      matrix:
+        runner_os:
+          - ubuntu-latest
+          - macos-latest
+          #- windows-latest
+    runs-on: ${{ matrix.runner_os }}
+    permissions:
+      security-events: write
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+      - name: Initialize CodeQL
+        uses: github/codeql-actions/init@v2
+        with:
+          languages: swift
+      - name: Perform build
+        env:
+          PACKAGE_ROOT: ${{ inputs.package_root != '' && format('--package-path={0}', inputs.package_root) || '' }}
+          EXTRA_FLAGS:  ${{ inputs.extra_flags }}
+        run: |
+          swift build "${PACKAGE_ROOT}" ${EXTRA_FLAGS}
+      - name: Run CodeQL analyze
+        uses: github/codeql-action/analyze@v2
+  
   linux-unit:
-    if: !(github.event.pull_request.draft || false)
+    if: ${{ !(github.event.pull_request.draft || false) }}
     strategy:
       fail-fast: false
       matrix:
@@ -86,35 +126,28 @@ jobs:
         uses: actions/checkout@v3
       - name: Check minimum Swift version for package
         id: swift-check
+        env:
+          PACKAGE_ROOT: ${{ inputs.package_root != '' && format('--package-path={0}', inputs.package_root) || '' }}
         run: |
-          echo $(swift package tools-version) $(swift package --version | cut -c31-) | { \
+          echo $(swift package "${PACKAGE_ROOT}" tools-version) $(swift package --version | cut -c31-) | { \
             IFS=. read -r pkmajor pkminor pkpatch tcmajor tcminor tcpatch ; \
             pkver=$(( $pkmajor * 10000 + $pkminor * 100 + $pkpatch )) ; \
             tcver=$(( $tcmajor * 10000 + $tcminor * 100 + $tcpatch )) ; \
             echo "ok=$([ $pkver -le $tcver ] && echo true || echo false)" >>"${GITHUB_OUTPUT}" ; \
           }
       - name: Run unit tests
-        if: steps.swift-check.outputs.ok
+        if: ${{ steps.swift-check.outputs.ok }}
         env:
           SWIFT_DETERMINISTIC_HASHING: 1
-          WITH_COVERAGE: ${{ inputs.with_coverage && '--enable-code-coverage' || '' }}
           WITH_TSAN:     ${{ $inputs.with_tsan && '--sanitize=thread' || '' }}
           TEST_FILTER:   ${{ inputs.test_filter != '' && format('--filter={0}', inputs.test_filter) || '' }}
-          PACKAGE_ROOT:  ${{ inputs.package_root != '' && format('--package-path {0}', inputs.package_root) || '' }}
-          EXTRA_FLAGS:   ${{ format('{0} {1}', inputs.extra_flags, inputs.extra_flags_linux) }}
+          PACKAGE_ROOT:  ${{ inputs.package_root != '' && format('--package-path={0}', inputs.package_root) || '' }}
+          EXTRA_FLAGS:   ${{ inputs.extra_flags }}
         run: |
-          swift test ${PACKAGE_ROOT} ${WITH_COVERAGE} ${WITH_TSAN} ${TEST_FILTER} ${EXTRA_FLAGS}
-      - name: Upload code coverage when present
-        if: inputs.with_coverage && steps.swift-check.outputs.ok
-        uses: vapor/swift-codecov-action@v0.2
-        with:
-          package_path:     ${{ inputs.package_root }}
-          ignore_paths:     ${{ inputs.coverage_ignores }}
-          build_parameters: ${{ inputs.extra_flags }} ${{ inputs.extra_flags_linux }}
-          cc_env_vars:      'SWIFT_VERSION,SWIFT_PLATFORM,RUNNER_OS,RUNNER_ARCH'
+          swift test "${PACKAGE_ROOT}" "${WITH_TSAN}" "${TEST_FILTER}"" ${EXTRA_FLAGS}
 
   macos-unit:
-    if: !(github.event.pull_request.draft || false)
+    if: ${{ !(github.event.pull_request.draft || false) }}
     strategy:
       fail-fast: false
       matrix:
@@ -133,24 +166,15 @@ jobs:
       - name: Run unit tests
         env:
           SWIFT_DETERMINISTIC_HASHING: 1
-          WITH_COVERAGE: ${{ inputs.with_coverage && '--enable-code-coverage' || '' }}
           WITH_TSAN:     ${{ $inputs.with_tsan && '--sanitize=thread' || '' }}
           TEST_FILTER:   ${{ inputs.test_filter != '' && format('--filter={0}', inputs.test_filter) || '' }}
-          PACKAGE_ROOT:  ${{ inputs.package_root != '' && format('--package-path {0}', inputs.package_root) || '' }}
-          EXTRA_FLAGS:   ${{ format('{0} {1}', inputs.extra_flags, inputs.extra_flags_macos) }}
+          PACKAGE_ROOT:  ${{ inputs.package_root != '' && format('--package-path={0}', inputs.package_root) || '' }}
+          EXTRA_FLAGS:   ${{ inputs.extra_flags }}
         run: |
-          swift test ${PACKAGE_ROOT} ${WITH_COVERAGE} ${WITH_TSAN} ${TEST_FILTER} ${EXTRA_FLAGS}
-      - name: Upload code coverage when present
-        if: inputs.with_coverage
-        uses: vapor/swift-codecov-action@v0.2
-        with:
-          package_path:     ${{ inputs.package_root }}
-          ignore_paths:     ${{ inputs.coverage_ignores }}
-          build_parameters: ${{ inputs.extra_flags }} ${{ inputs.extra_flags_macos }}
-          cc_env_vars:      'MD_APPLE_SDK_ROOT,RUNNER_OS,RUNNER_ARCH'
+          swift test "${PACKAGE_ROOT}" "${WITH_TSAN}" "${TEST_FILTER}" ${EXTRA_FLAGS}
 
 #   windows-unit:
-#     if: !(github.event.pull_request.draft || false)
+#     if: ${{ !(github.event.pull_request.draft || false) }}
 #     strategy:
 #       fail-fast: false
 #       matrix:
@@ -176,18 +200,9 @@ jobs:
 #       - name: Run unit tests
 #         env:
 #           SWIFT_DETERMINISTIC_HASHING: 1
-#           WITH_COVERAGE: ${{ inputs.with_coverage && '--enable-code-coverage' || '' }}
 #           WITH_TSAN:     ${{ $inputs.with_tsan && '--sanitize=thread' || '' }}
 #           TEST_FILTER:   ${{ inputs.test_filter != '' && format('--filter={0}', inputs.test_filter) || '' }}
-#           PACKAGE_ROOT:  ${{ inputs.package_root != '' && format('--package-path {0}', inputs.package_root) || '' }}
-#           EXTRA_FLAGS:   ${{ format('{0} {1}', inputs.extra_flags, inputs.extra_flags_windows) }}
+#           PACKAGE_ROOT:  ${{ inputs.package_root != '' && format('--package-path={0}', inputs.package_root) || '' }}
+#           EXTRA_FLAGS:   ${{ inputs.extra_flags }}
 #         run: |
-#           swift test ${PACKAGE_ROOT} ${WITH_COVERAGE} ${WITH_TSAN} ${TEST_FILTER} ${EXTRA_FLAGS}
-#       - name: Upload code coverage when present
-#         if: inputs.with_coverage
-#         uses: vapor/swift-codecov-action@v0.2
-#         with:
-#           package_path:     ${{ inputs.package_root }}
-#           ignore_paths:     ${{ inputs.coverage_ignores }}
-#           build_parameters: ${{ inputs.extra_flags }} ${{ inputs.extra_flags_windows }}
-#           cc_env_vars:      'SWIFT_VERSION,RUNNER_OS,RUNNER_ARCH'
+#           swift test "${PACKAGE_ROOT}" "${WITH_TSAN}" "${TEST_FILTER}" ${EXTRA_FLAGS}
