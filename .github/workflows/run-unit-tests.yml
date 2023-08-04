@@ -84,6 +84,7 @@ jobs:
   gh-codeql:
     if: ${{ inputs.with_gh_codeql && github.event_name == 'push' }}
     strategy:
+      fail-fast: false
       matrix:
         runner_os:
           - ubuntu-latest
@@ -97,7 +98,7 @@ jobs:
         if: ${{ startsWith(matrix.runner_os, 'macos') }}
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: latest
+          xcode-version: latest-stable
       - name: Check out code
         uses: actions/checkout@v3
       - name: Initialize CodeQL
