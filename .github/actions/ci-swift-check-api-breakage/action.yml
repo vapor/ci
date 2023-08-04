@@ -28,9 +28,11 @@ runs:
   steps:
       # https://github.com/actions/checkout/issues/766
       - name: Mark the Git workspace safe
+        shell: bash
         run: git config --global --add safe.directory ${GITHUB_WORKSPACE}
 
       - name: Perform API breakage check
+        shell: bash
         env:
           TARGETS:        ${{ inputs.targets != ''        && format('--targets={0}', inputs.targets) || '' }}
           PACKAGE_ROOT:   ${{ inputs.package_root != ''   && format('--package-path={0}', inputs.package_root) || '' }}
@@ -38,5 +40,5 @@ runs:
           BASELINE_REF:   ${{ inputs.baseline_ref }}
           EXTRA_FLAGS:    ${{ inputs.extra_flags }}
         run: |
-          swift package "${PACKAGE_ROOT}" diagnose-api-breaking-changes \
+          swift package ${PACKAGE_ROOT} diagnose-api-breaking-changes \
               "${BASELINE_REF}" ${EXTRA_FLAGS} ${TARGETS} ${ALLOWLIST_PATH}
