@@ -1,0 +1,122 @@
+# This file contains baseline configuration parameters used by all CI which
+# goes through the workflows contained in this repo. Data is extracted from
+# it with the `yq` command; it does NOT recognize workflow syntax.
+
+# Defines the matrix of Swift versions tested on Linux. Versions too old to
+# support the package being tested are skipped.
+linux-swift-testing-matrix:
+  swift-image:
+    - swift:5.6-focal
+    - swift:5.7-jammy
+    - swift:5.8-jammy
+    - swiftlang/swift:nightly-5.9-jammy
+    - swiftlang/swift:nightly-main-jammy
+
+# Defines the Docker image tag used to run ancillary jobs, such as code
+# coverage gathering, API breakage checks, and CodeQL analysis.
+linux-utility-image: swift:jammy
+
+# Defines the matrix of macOS and Xcode versions tested for macOS. macOS
+# versions are specified as inputs to the `runs-on` key. Xcode versions
+# are specified as inputs to the `maxim-lobanov/setup-xcode` action.
+macos-swift-testing-matrix:
+  macos-version:
+    - macos-13
+  xcode-version:
+    - '~14.3'
+    - '15.0-beta'
+
+# Defines the macOS version used for ancillary jobs, such as CodeQL analysis
+macos-utility-version: macos-13
+# Defines the Xcode version used for ancillary jobs
+xcode-utility-version: '~14.3'
+
+# Defines the matrix of Swift versions tested on Windows. Currently unused,
+# but fingers crossed that someday...
+windows-swift-testing-matrix:
+  swift-version:
+    - 5.6
+    - 5.7
+    - 5.8
+    - 5.9
+  include:
+    - { swift-version: 5.6, swift-branch: swift-5.6.3-RELEASE, swift-tag: 5.6.3-RELEASE }
+    - { swift-version: 5.7, swift-branch: swift-5.7.3-RELEASE, swift-tag: 5.7.3-RELEASE }
+    - { swift-version: 5.8, swift-branch: swift-5.8.1-RELEASE, swift-tag: 5.8.1-RELEASE }
+    - { swift-version: 5.9, swift-branch: swift-5.9-branch, swift-tag: 5.9-DEVELOPMENT-SNAPSHOT-2023-05-11-a }
+
+# Defines the Swift version used to run ancillary jobs on Windows. Again,
+# hopefully someday.
+windows-utility-swift-version: 5.8
+windows-utility-swift-branch: swift-5.8.1-RELEASE
+windows-utility-swift-tag: 5.8.1-RELEASE
+
+# Defines the parameters used to configure PostgreSQL Docker images when 
+# testing on Linux with a Postgres service.
+postgresql-image-env:
+  POSTGRES_USER: 'test_username'
+  POSTGRES_DB: 'test_database'
+  POSTGRES_PASSWORD: 'test_password'
+  POSTGRES_HOST_AUTH_METHOD: scram-sha-256
+  POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+# Defines the matrix of PostgreSQL Docker images tested on Linux.
+postgresql-linux-testing-matrix:
+  postgres-image:
+    - postgres:11
+    - postgres:13
+    - postgres:15
+# Defines the matrix of PostgreSQL formulae tested on macOS
+postgresql-macos-testing-matrix:
+  postgres-formula:
+    - postgresql@14
+
+# Defines the parameters used to configure MySQL Docker images when 
+# testing on Linux with a MySQL service.
+mysql-image-env:
+  MYSQL_ALLOW_EMPTY_PASSWORD: true
+  MYSQL_USER: 'test_username'
+  MYSQL_PASSWORD: 'test_password'
+  MYSQL_DATABASE: 'test_database'
+# Defines the matrix of MySQL Docker images tested on Linux.
+mysql-linux-testing-matrix:
+  mysql-image:
+    - mysql:5.7
+    - mysql:8.0
+    - mariadb:10.2
+    - mariadb:11
+    - percona:5.7
+    - percona:8.0
+# Defines the matrix of MySQL formulae tested on macOS
+mysql-macos-testing-matrix:
+  mysql-formula:
+    - mysql
+    - mariadb
+    - percona-server
+
+# Defines the parameters used to configure MongoDB Docker images when 
+# testing on Linux with a MongoDB service.
+mongodb-image-env:
+
+# Defines the matrix of MongoDB Docker images tested on Linux.
+mongodb-linux-testing-matrix:
+  mongodb-image:
+    - mongo:6
+# Defines the matrix of MongoDB formulae tested on macOS
+mongodb-macos-testing-matrix:
+  mongodb-formula:
+    - mongodb/mongodb-community
+
+# Defines the parameters used to configure Redis Docker images when 
+# testing on Linux with a Redis service.
+redis-image-env:
+
+# Defines the matrix of Redis Docker images tested on Linux.
+redis-linux-testing-matrix:
+  redis-image:
+    - redis:6
+    - redis:7
+# Defines the matrix of Rdis formulae tested on macOS
+redis-macos-testing-matrix:
+  redis-formula:
+    - redis@6.2
+    - redis@7.0
