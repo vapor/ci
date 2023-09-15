@@ -57,7 +57,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Check out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with: { 'fetch-depth': 0 }
       - name: Run API breakage check
         run: |
@@ -72,7 +72,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Check out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Run unit tests for coverage data
         run: |
           SWIFT_DETERMINISTIC_HASHING=1 swift test ${PACKAGE_ROOT} ${TEST_FILTER} --enable-code-coverage ${EXTRA_FLAGS}
@@ -101,7 +101,7 @@ jobs:
       #  uses: maxim-lobanov/setup-xcode@v1
       #  with: { xcode-version: '~14.3' }
       - name: Check out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v2
         with: { languages: swift }
@@ -127,7 +127,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Check out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Check minimum Swift version for package
         id: swift-check
         run: |
@@ -160,7 +160,7 @@ jobs:
         with:
           xcode-version: ${{ matrix.xcode-version }}
       - name: Check out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Run unit tests
         run: |
           SWIFT_DETERMINISTIC_HASHING=1 swift test ${PACKAGE_ROOT} ${WITH_TSAN} ${TEST_FILTER} ${EXTRA_FLAGS}
@@ -189,7 +189,7 @@ jobs:
 #           branch: ${{ matrix.swift-branch }}
 #           tag: ${{ matrix.swift-tag }}
 #       - name: Check out code
-#         uses: actions/checkout@v3
+#         uses: actions/checkout@v4
 #       - name: Run unit tests
 #         run: |
 #           SWIFT_DETERMINISTIC_HASHING=1 swift test ${PACKAGE_ROOT} ${WITH_TSAN} ${TEST_FILTER} ${EXTRA_FLAGS}
