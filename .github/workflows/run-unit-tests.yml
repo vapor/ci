@@ -117,10 +117,10 @@ jobs:
       fail-fast: false
       matrix:
         swift-image:
-          - swift:5.6-focal
           - swift:5.7-jammy
           - swift:5.8-jammy
-          - swiftlang/swift:nightly-5.9-jammy
+          - swift:5.9-jammy
+          - swiftlang/swift:nightly-5.10-jammy
           - swiftlang/swift:nightly-main-jammy
     runs-on: ubuntu-latest
     container: ${{ matrix.swift-image }}
@@ -151,7 +151,7 @@ jobs:
           - macos-13
         xcode-version:
           - '~14.3'
-          - '15.0-beta'
+          - 'latest'
     runs-on: ${{ matrix.macos-version }}
     timeout-minutes: 60
     steps:
@@ -171,15 +171,15 @@ jobs:
 #       fail-fast: false
 #       matrix:
 #         swift-version:
-#           - 5.6
 #           - 5.7
 #           - 5.8
 #           - 5.9
+#           - 5.10
 #         include:
-#           - { swift-version: 5.6, swift-branch: swift-5.6.3-RELEASE, swift-tag: 5.6.3-RELEASE }
 #           - { swift-version: 5.7, swift-branch: swift-5.7.3-RELEASE, swift-tag: 5.7.3-RELEASE }
 #           - { swift-version: 5.8, swift-branch: swift-5.8.1-RELEASE, swift-tag: 5.8.1-RELEASE }
-#           - { swift-version: 5.9, swift-branch: swift-5.9-branch, swift-tag: 5.9-DEVELOPMENT-SNAPSHOT-2023-05-11-a }
+#           - { swift-version: 5.9, swift-branch: swift-5.9-RELEASE, swift-tag: 5.9-RELEASE }
+#           - { swift-version: 5.10, swift-branch: swift-5.10-branch, swift-tag: 5.10-DEVELOPMENT-SNAPSHOT-2023-09-19-a }
 #     runs-on: windows-latest
 #    timeout-minutes: 60
 #     steps:
