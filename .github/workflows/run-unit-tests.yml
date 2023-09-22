@@ -86,11 +86,14 @@ jobs:
     if: ${{ inputs.with_gh_codeql && !(github.event.pull_request.draft || false) }}
     runs-on: ubuntu-latest
     container: swift:jammy
-    permissions: { security-events: write }
+    permissions: { actions: write, contents: read, pull-requests: write, statuses: write, security-events: write }
     timeout-minutes: 60
     steps:
       - name: Check out code
         uses: actions/checkout@v4
+      - name: Satisfy Git and CodeQL
+        run: |
+          git config --global --add safe.directory "$(pwd)"
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v2
         with: { languages: swift }
