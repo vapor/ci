@@ -92,12 +92,9 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v4
-      - name: Satisfy Git and CodeQL
-        run: |
-          git config --global --add safe.directory "$(pwd)"
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v2
-        with: { languages: swift, debug: true }
+        with: { languages: swift }
       - name: Perform build
         run: |
           swift build ${PACKAGE_ROOT} ${EXTRA_FLAGS}
