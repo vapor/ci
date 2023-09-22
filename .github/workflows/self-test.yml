@@ -1,0 +1,37 @@
+name: Self-test the reusable workflow
+on:
+  workflow_dispatch:
+    inputs:
+      with_coverage:
+        type: boolean
+        required: false
+        default: true
+        description: "Set to 'true' to collect and upload code coverage data. Defaults to 'false'."
+      with_tsan:
+        type: boolean
+        required: false
+        default: true
+        description: "Set to 'true' to run tests with Thread Sanitizer. Defaults to 'true'."
+      with_public_api_check:
+        type: boolean
+        required: false
+        default: true
+        description: "Set to 'true' to run the SwiftPM public API breakage check. Defaults to 'true'."
+      with_gh_codeql:
+        type: boolean
+        required: false
+        default: true
+        description: "Set to 'true' to run CodeQL checks. Defaults to 'true'."
+  push: { branches: [ main ] }
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  call-workflow:
+    uses: ./.github/workflows/run-unit-tests.yml
+    with:
+      with_coverage: ${{ inputs.with_coverage || false }}
+      with_tsan: ${{ inputs.with_tsan || false }}
+      with_public_api_check: ${{ inputs.with_public_api_check || false }}
+      with_gh_codeql: ${{ inputs.with_gh_codeql || true }}
