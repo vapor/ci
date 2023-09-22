@@ -48,8 +48,8 @@ env:
   WITH_TSAN:    ${{ inputs.with_tsan && '--sanitize=thread' || '' }}
   TEST_FILTER:  ${{ inputs.test_filter != '' && format('--filter={0}', inputs.test_filter) || '' }}
 
+# We use the unversioned "jammy" docker tag to specify the "latest" Swift release in several jobs.
 jobs:  
-  # Use "jammy" docker tag for "latest" Swift release.
   api-breakage:
     if: ${{ inputs.with_public_api_check && !(github.event.pull_request.draft || false) }}
     runs-on: ubuntu-latest
@@ -64,7 +64,6 @@ jobs:
           git config --global --add safe.directory ${GITHUB_WORKSPACE}
           swift package ${PACKAGE_ROOT} diagnose-api-breaking-changes origin/main ${EXTRA_FLAGS}
   
-  # Use "jammy" docker tag for "latest" Swift release.
   code-coverage:
     if: ${{ inputs.with_coverage && !(github.event.pull_request.draft || false) }}
     runs-on: ubuntu-latest
@@ -85,26 +84,11 @@ jobs:
   
   gh-codeql:
     if: ${{ inputs.with_gh_codeql && !(github.event.pull_request.draft || false) }}
-    strategy:
-      fail-fast: false
-      matrix:
-        runner-os:
-          - ubuntu-latest
-          #- macos-13
-          #- windows-latest
-    runs-on: ${{ matrix.runner-os }}
+    runs-on: ubuntu-latest
+    container: swift:jammy
     permissions: { security-events: write }
     timeout-minutes: 60
     steps:
-      #- name: Select appropriate Xcode version
-      #  if: ${{ startsWith(matrix.runner-os, 'macos') }}
-      #  uses: maxim-lobanov/setup-xcode@v1
-      #  with: { xcode-version: '~14.3' }
-      - name: Use latest Swift toolchain
-        if: ${{ startsWith(matrix.runner-os, 'ubuntu') }}
-        uses: vapor/swiftly-action@v0.1
-        with:
-          toolchain: latest
       - name: Check out code
         uses: actions/checkout@v4
       - name: Initialize CodeQL
