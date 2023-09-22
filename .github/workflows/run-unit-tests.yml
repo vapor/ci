@@ -85,8 +85,9 @@ jobs:
   gh-codeql:
     if: ${{ inputs.with_gh_codeql && !(github.event.pull_request.draft || false) }}
     runs-on: ubuntu-latest
-    container: swift:jammy
-    permissions: { actions: write, contents: read, pull-requests: write, statuses: write, security-events: write }
+    container:
+      image: swift:5.8-jammy
+    permissions: { actions: write, contents: read, security-events: write }
     timeout-minutes: 60
     steps:
       - name: Check out code
@@ -96,7 +97,7 @@ jobs:
           git config --global --add safe.directory "$(pwd)"
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v2
-        with: { languages: swift }
+        with: { languages: swift, debug: true }
       - name: Perform build
         run: |
           swift build ${PACKAGE_ROOT} ${EXTRA_FLAGS}
