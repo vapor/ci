@@ -98,15 +98,15 @@ jobs:
         with:
           package_root: ${{ inputs.package_root }}
       - name: Initialize CodeQL
-        if: ${{ steps.swift-check.swift-compatible == 'true' }}
+        if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
         uses: github/codeql-action/init@v2
         with: { languages: swift }
       - name: Perform build
-        if: ${{ steps.swift-check.swift-compatible == 'true' }}
+        if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
         run: |
           swift build ${PACKAGE_ROOT} ${EXTRA_FLAGS}
       - name: Run CodeQL analyze
-        if: ${{ steps.swift-check.swift-compatible == 'true' }}
+        if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
         uses: github/codeql-action/analyze@v2
   
   linux-unit:
@@ -132,7 +132,7 @@ jobs:
         with:
           package_root: ${{ inputs.package_root }}
       - name: Run unit tests
-        if: ${{ steps.swift-check.swift-compatible == 'true' }}
+        if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
         run: |
           SWIFT_DETERMINISTIC_HASHING=1 swift test ${PACKAGE_ROOT} ${WITH_TSAN} ${TEST_FILTER} ${EXTRA_FLAGS}
 
@@ -161,7 +161,7 @@ jobs:
         with:
           package_root: ${{ inputs.package_root }}
       - name: Run unit tests
-        if: ${{ steps.swift-check.swift-compatible == 'true' }}
+        if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
         run: |
           SWIFT_DETERMINISTIC_HASHING=1 swift test ${PACKAGE_ROOT} ${WITH_TSAN} ${TEST_FILTER} ${EXTRA_FLAGS}
 
