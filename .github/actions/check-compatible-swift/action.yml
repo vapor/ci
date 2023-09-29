@@ -35,5 +35,5 @@ runs:
           toolchain_version=$(parse_version $(swift package --version | cut -c31-))
           package_version=$(parse_version $(swift package ${PACKAGE_ROOT} tools-version))
           
-          is_compatible=$((( ${package_version} < ${toolchain_version} )) && echo true || echo false)
+          is_compatible=$((( ${package_version} <= ${toolchain_version} )) && echo true || echo false)
           echo "ok=${is_compatible}" >>"${GITHUB_OUTPUT}"
