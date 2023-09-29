@@ -92,13 +92,21 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v4
+      - name: Check Swift compatibility
+        id: swift-check
+        uses: vapor/ci/.github/actions/check-compatible-swift@main
+        with:
+          package_root: ${{ inputs.package_root }}
       - name: Initialize CodeQL
+        if: ${{ steps.swift-check.swift-compatible == 'true' }}
         uses: github/codeql-action/init@v2
         with: { languages: swift }
       - name: Perform build
+        if: ${{ steps.swift-check.swift-compatible == 'true' }}
         run: |
           swift build ${PACKAGE_ROOT} ${EXTRA_FLAGS}
       - name: Run CodeQL analyze
+        if: ${{ steps.swift-check.swift-compatible == 'true' }}
         uses: github/codeql-action/analyze@v2
   
   linux-unit:
@@ -118,17 +126,13 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v4
-      - name: Check minimum Swift version for package
+      - name: Check Swift compatibility
         id: swift-check
-        run: |
-          echo "$(swift package ${PACKAGE_ROOT} tools-version).$(swift package --version | cut -c31-)" | { \
-            IFS=. read -r pkmajor pkminor pkpatch tcmajor tcminor tcpatch ; \
-            pkver=$(( $pkmajor * 10000 + $pkminor * 100 + $pkpatch )) ; \
-            tcver=$(( $tcmajor * 10000 + $tcminor * 100 + $tcpatch )) ; \
-            echo "ok=$([ $pkver -le $tcver ] && echo true || echo false)" >>"${GITHUB_OUTPUT}" ; \
-          }
+        uses: vapor/ci/.github/actions/check-compatible-swift@main
+        with:
+          package_root: ${{ inputs.package_root }}
       - name: Run unit tests
-        if: ${{ steps.swift-check.outputs.ok == 'true' }}
+        if: ${{ steps.swift-check.swift-compatible == 'true' }}
         run: |
           SWIFT_DETERMINISTIC_HASHING=1 swift test ${PACKAGE_ROOT} ${WITH_TSAN} ${TEST_FILTER} ${EXTRA_FLAGS}
 
@@ -151,17 +155,13 @@ jobs:
           xcode-version: ${{ matrix.xcode-version }}
       - name: Check out code
         uses: actions/checkout@v4
-      - name: Check minimum Swift version for package
+      - name: Check Swift compatibility
         id: swift-check
-        run: |
-          echo "$(swift package ${PACKAGE_ROOT} tools-version).$(swift package --version | cut -c31-)" | { \
-            IFS=. read -r pkmajor pkminor pkpatch tcmajor tcminor tcpatch ; \
-            pkver=$(( $pkmajor * 10000 + $pkminor * 100 + $pkpatch )) ; \
-            tcver=$(( $tcmajor * 10000 + $tcminor * 100 + $tcpatch )) ; \
-            echo "ok=$([ $pkver -le $tcver ] && echo true || echo false)" >>"${GITHUB_OUTPUT}" ; \
-          }
+        uses: vapor/ci/.github/actions/check-compatible-swift@main
+        with:
+          package_root: ${{ inputs.package_root }}
       - name: Run unit tests
-        if: ${{ steps.swift-check.outputs.ok == 'true' }}
+        if: ${{ steps.swift-check.swift-compatible == 'true' }}
         run: |
           SWIFT_DETERMINISTIC_HASHING=1 swift test ${PACKAGE_ROOT} ${WITH_TSAN} ${TEST_FILTER} ${EXTRA_FLAGS}
 

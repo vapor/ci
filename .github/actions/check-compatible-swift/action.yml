@@ -1,0 +1,39 @@
+name: check-compatible-swift
+description: >
+  Determines whether the default Swift toolchain presently available is new enough to
+  satisfy the minimum Swift version required by the package in the current directory.
+
+inputs:
+  package_root:
+    description: >
+      Provides a mechanism to override the path assumed to contain the package to check.
+    default: ''
+outputs:
+  swift-compatible:
+    description: >
+      The string "true" if the package is compatible with the installed Swift toolchain,
+      otherwise the string "false".
+    value: ${{ steps.swift-version-check.outputs.ok }}
+
+runs:
+  using: composite
+  steps:
+      - name: Compare package's Swift version to installed
+        id: swift-version-check
+        env:
+          PACKAGE_ROOT: ${{ inputs.package_root != '' && format('--package-path={0}', inputs.package_root) || '' }}
+        shell: bash
+        run: |
+          function parse_version() { \
+            local major="$(echo $1 | cut -d . -f 1)"; \
+            local minor="$(echo $1 | cut -d . -f 2)"; \
+            local patch="$(echo $1 | cut -d . -f 3)"; \
+            \
+            echo $(( ${major} * 10000 + ${minor} * 100 + ${patch} )); \
+          }
+          
+          toolchain_version=$(swift package --version | cut -c31- | parse_version)
+          package_version=$(swift package ${PACKAGE_ROOT} tools-version | parse_version)
+          
+          is_compatible=$((( ${package_version} < ${toolchain_version} )) && echo true || echo false)
+          echo "ok=${is_compatible}" >>"${GITHUB_OUTPUT}"
