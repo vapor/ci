@@ -92,7 +92,7 @@ func main() {
         owner: owner, repo: repo, version: 0, sha: commit, ref: branch,
         job: .init(correlator: correlator, id: runId),
         detector: .init(
-            name: .init(detector.prefix(while: { $0 != "_" })),
+            name: .init(detector.drop(while: { $0 == "_" }).prefix(while: { $0 != "_" })),
             version: detectorVer.isEmpty ? "v0" : detectorVer,
             url: "\(serverUrl)/\(detectorRepo.isEmpty ? "vapor/ci" : detectorRepo)"
         ),
