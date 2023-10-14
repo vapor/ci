@@ -39,7 +39,7 @@ runs:
       run: |
         set -e -o pipefail
         shopt -s lastpipe
-        OWNER="${REPO_SPEC%%/*}" REPO="${REPO_SPEC#*/}"
+        export OWNER="${REPO_SPEC%%/*}" REPO="${REPO_SPEC#*/}"
         cd "${PROJ}"
         
         if [[ -f './Package.resolved' ]]; then
