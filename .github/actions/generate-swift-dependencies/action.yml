@@ -27,6 +27,27 @@ runs:
   using: composite
   steps:
     - name: Generate dependencies
+      shell: bash
+      run: |
+        cd "${PROJ}"
+
+        if [[ -f './Package.resolved' ]]; then
+          # If there's a preexisting Package.resolved and Git knows about it, this
+          # action has nothing to do; a correct Dependabot configuration will already
+          # process that file.
+          if [[ -z "$(git status --porcelain Package.resolved)" ]]; then
+            echo "No need to generate"
+            exit 0
+          fi
+          # Otherwise it's already present due to something that was done before
+          # this action was invoked, so leave it alone.
+        else
+          # No file exists, we need to run a resolve.
+          swift package --skip-update resolve
+        fi
+    
+    - name: Convert dependency graph
+      id: graph
       env:
         PROJ: ${{ inputs.path || github.workspace }}
         REPO_SPEC: ${{ inputs.repository || github.repository }}
@@ -42,25 +63,22 @@ runs:
         export OWNER="${REPO_SPEC%%/*}" REPO="${REPO_SPEC#*/}"
         cd "${PROJ}"
         
-        if [[ -f './Package.resolved' ]]; then
-          # If there's a preexisting Package.resolved and Git knows about it, this
-          # action has nothing to do; a correct Dependabot configuration will already
-          # process that file.
-          if [[ -z "$(git status --porcelain Package.resolved)" ]]; then
-            exit 0
-          fi
-          # Otherwise it's already present due to something that was done before
-          # this action was invoked, so leave it alone.
-        else
-          # No file exists, we need to run a resolve.
-          swift package --skip-update resolve
-        fi
-        
-        swift package --skip-update show-dependencies --format json | \
-          "${GITHUB_ACTION_PATH}/convert-dependency-graph.swift" | \
-          curl -fSsL -X POST \
-            -H 'Accept: application/vnd.github+json' \
-            -H "Authorization: Bearer ${TOKEN}" \
-            -H 'X-GitHub-Api-Version: 2022-11-28' \
-            "${GITHUB_API_URL}/repos/${OWNER}/${REPO}/dependency-graph/snapshots" \
-            --data @-
+        json1="$(swift package --skip-update --force-resolved-versions show-dependencies --format json)"
+        echo "${json1}"
+        json2="$(echo "${json1}" | "${GITHUB_ACTION_PATH}/convert-dependency-graph.swift")"
+        echo "${json2}"
+        echo "graph=${json2}" >>"${GITHUB_OUTPUT}"
+    
+    - name: Submit graph
+      env:
+        REPO_SPEC: ${{ inputs.repository || github.repository }}
+        TOKEN: ${{ inputs.token || github.token }}
+        JSON2: ${{ steps.graph.outputs.graph }}
+      shell: bash
+      run: |
+        curl -fLv -X POST \
+          -H 'Accept: application/vnd.github+json' \
+          -H "Authorization: Bearer ${TOKEN}" \
+          -H 'X-GitHub-Api-Version: 2022-11-28' \
+          "${GITHUB_API_URL}/repos/${REPO_SPEC}/dependency-graph/snapshots" \
+          --data-raw "${JSON2}"
