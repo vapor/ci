@@ -44,6 +44,7 @@ func env(_ name: String) -> String {
         try? FileHandle.standardError.write(contentsOf: Array("Incomplete environment: \(name).\n".utf8))
         exit(1)
     }
+    return value
 }
 
 func main() {
