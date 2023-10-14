@@ -40,8 +40,8 @@ struct GithubDependencyGraph: Codable {
         }
         let name: String, file: File, resolved: [String: Package]
     }
-    let owner: String, repo: String, version: Int, sha: String, ref: String,
-        job: Job, detector: Detector, scanned: Date, manifests: [String: Manifest]
+    let version: Int, sha: String, ref: String, job: Job, detector: Detector,
+        scanned: Date, manifests: [String: Manifest]
 }
 
 func env(_ name: String) -> String {
@@ -58,9 +58,8 @@ func main() {
     encoder.dateEncodingStrategy = .iso8601
     encoder.outputFormatting = [.withoutEscapingSlashes, .sortedKeys]
 
-    let owner = env("OWNER"), repo = env("REPO"), branch = env("BRANCH"),
-        commit = env("COMMIT"), correlator = env("CORRELATOR"), runId = env("RUN_ID"),
-        detector = env("GITHUB_ACTION"), detectorVer = env("GITHUB_ACTION_REF"),
+    let branch = env("BRANCH"), commit = env("COMMIT"), correlator = env("CORRELATOR"),
+        runId = env("RUN_ID"), detector = env("GITHUB_ACTION"), detectorVer = env("GITHUB_ACTION_REF"),
         detectorRepo = env("GITHUB_ACTION_REPOSITORY"), serverUrl = env("GITHUB_SERVER_URL")
     
     let dependencies = try! decoder.decode(
@@ -89,7 +88,7 @@ func main() {
     handleDeps(dependencies)
 
     let graph = GithubDependencyGraph(
-        owner: owner, repo: repo, version: 0, sha: commit, ref: branch,
+        version: 0, sha: commit, ref: branch,
         job: .init(correlator: correlator, id: runId),
         detector: .init(
             name: .init(detector.drop(while: { $0 == "_" }).prefix(while: { $0 != "_" })),

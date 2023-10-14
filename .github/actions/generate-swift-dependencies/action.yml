@@ -50,15 +50,12 @@ runs:
       id: graph
       env:
         PROJ: ${{ inputs.path || github.workspace }}
-        REPO_SPEC: ${{ inputs.repository || github.repository }}
         BRANCH: ${{ inputs.branch || github.ref }}
         COMMIT: ${{ inputs.commit || github.sha }}
-        TOKEN: ${{ inputs.token || github.token }}
         CORRELATOR: ${{ format('{0}-{1}-{2}-{3}', github.workflow_ref, github.job, github.action, runner.os) }}
         RUN_ID: ${{ github.run_id }}
       shell: bash
       run: |
-        export OWNER="${REPO_SPEC%%/*}" REPO="${REPO_SPEC#*/}"
         json1="$(swift package --package-path "${PROJ}" --skip-update --force-resolved-versions show-dependencies --format json)"
         echo "${json1}"
         json2="$(echo "${json1}" | "${GITHUB_ACTION_PATH}/convert-dependency-graph.swift")"
