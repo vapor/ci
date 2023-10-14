@@ -76,7 +76,7 @@ func main() {
             resolved[dep.identity] = .init(
                 package_url: .init(with: url, version: dep.version),
                 dependencies: dep.dependencies.map {
-                    SwiftPUrl(with: $0.url, version: $0.version).rawValue
+                    SwiftPUrl(with: URL(string: $0.url)!, version: $0.version).rawValue
                 }.sorted()
             )
         }
