@@ -56,8 +56,8 @@ runs:
           swift package --skip-update resolve
         fi
         
-        swift package --skip-update show-dependencies --format json |
-          "${GITHUB_ACTION_PATH}/convert-dependency-graph.swift" |
+        swift package --skip-update show-dependencies --format json | \
+          "${GITHUB_ACTION_PATH}/convert-dependency-graph.swift" | \
           curl -fSsL -X POST \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${TOKEN}" \
