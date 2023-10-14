@@ -1,4 +1,4 @@
-#!/usr/bin/env swift -enable-upcoming-feature ExistentialAny -enable-upcoming-feature BareSlashRegexLiterals
+#!/usr/bin/env -S swift -enable-upcoming-feature ExistentialAny -enable-upcoming-feature BareSlashRegexLiterals
 
 import Foundation
 

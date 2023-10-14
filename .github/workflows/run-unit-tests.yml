@@ -51,7 +51,7 @@ env:
 # We use the unversioned "jammy" docker tag to specify the "latest" Swift release in several jobs.
 jobs:  
   api-breakage:
-    if: ${{ inputs.with_public_api_check && !(github.event.pull_request.draft || false) }}
+    if: ${{ inputs.with_public_api_check && !(github.event.pull_request.draft || false) && github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     container: swift:jammy
     timeout-minutes: 60
