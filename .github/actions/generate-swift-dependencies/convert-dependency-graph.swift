@@ -39,7 +39,12 @@ struct GithubDependencyGraph: Codable {
         job: Job, detector: Detector, scanned: Date, manifests: [String: Manifest]
 }
 
-func env(_ name: String) -> String? { ProcessInfo.processInfo.environment[name] }
+func env(_ name: String) -> String {
+    guard let value = ProcessInfo.processInfo.environment[name] else {
+        try? FileHandle.standardError.write(contentsOf: Array("Incomplete environment: \(name).\n".utf8))
+        exit(1)
+    }
+}
 
 func main() {
     let decoder = JSONDecoder(), encoder = JSONEncoder()
@@ -47,17 +52,10 @@ func main() {
     encoder.dateEncodingStrategy = .iso8601
     encoder.outputFormatting = [.withoutEscapingSlashes, .sortedKeys]
 
-    guard let owner = env("OWNER"),           let repo = env("REPO"),
-          let branch = env("BRANCH"),         let commit = env("COMMIT"),
-          let correlator = env("CORRELATOR"), let runId = env("RUN_ID"),
-          let detector = env("GITHUB_ACTION"),
-          let detectorVer = env("GITHUB_ACTION_REF"),
-          let detectorRepo = env("GITHUB_ACTION_REPOSITORY"),
-          let serverUrl = env("GITHUB_SERVER_URL")
-    else {
-        try? FileHandle.standardError.write(contentsOf: Array("Incomplete environment.\n".utf8))
-        exit(1)
-    }
+    let owner = env("OWNER"), repo = env("REPO"), branch = env("BRANCH"),
+        commit = env("COMMIT"), correlator = env("CORRELATOR"), runId = env("RUN_ID"),
+        detector = env("GITHUB_ACTION"), detectorVer = env("GITHUB_ACTION_REF"),
+        detectorRepo = env("GITHUB_ACTION_REPOSITORY"), serverUrl = env("GITHUB_SERVER_URL")
     
     let dependencies = try! decoder.decode(
         PackageDependency.self,
