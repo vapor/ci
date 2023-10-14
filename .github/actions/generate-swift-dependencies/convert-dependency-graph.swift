@@ -32,7 +32,12 @@ struct GithubDependencyGraph: Codable {
     struct Detector: Codable { let name: String, version: String, url: String }
     struct Manifest: Codable {
         struct File: Codable { let source_location: String }
-        struct Package: Codable { let package_url: SwiftPUrl, dependencies: [String] }
+        struct Package: Codable {
+            let package_url: SwiftPUrl, scope: String, dependencies: [String]
+            init(package_url: SwiftPUrl, dependencies: [String]) {
+                (self.package_url, self.scope, self.dependencies) = (package_url, "runtime", dependencies)
+            }
+        }
         let name: String, file: File, resolved: [String: Package]
     }
     let owner: String, repo: String, version: Int, sha: String, ref: String,
@@ -88,8 +93,8 @@ func main() {
         job: .init(correlator: correlator, id: runId),
         detector: .init(
             name: .init(detector.prefix(while: { $0 != "_" })),
-            version: detectorVer,
-            url: "\(serverUrl)/\(detectorRepo)"
+            version: detectorVer.isEmpty ? "v0" : detectorVer,
+            url: "\(serverUrl)/\(detectorRepo.isEmpty ? "vapor/ci" : detectorRepo)"
         ),
         scanned: Date(),
         manifests: ["Package.resolved": .init(

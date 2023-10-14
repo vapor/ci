@@ -54,16 +54,12 @@ runs:
         BRANCH: ${{ inputs.branch || github.ref }}
         COMMIT: ${{ inputs.commit || github.sha }}
         TOKEN: ${{ inputs.token || github.token }}
-        CORRELATOR: ${{ format('{0}-{1}-{2}-{3}', github.workflow, github.job, github.action, runner.os) }}
+        CORRELATOR: ${{ format('{0}-{1}-{2}-{3}', github.workflow_ref, github.job, github.action, runner.os) }}
         RUN_ID: ${{ github.run_id }}
       shell: bash
       run: |
-        set -e -o pipefail
-        shopt -s lastpipe
         export OWNER="${REPO_SPEC%%/*}" REPO="${REPO_SPEC#*/}"
-        cd "${PROJ}"
-        
-        json1="$(swift package --skip-update --force-resolved-versions show-dependencies --format json)"
+        json1="$(swift package --package-path "${PROJ}" --skip-update --force-resolved-versions show-dependencies --format json)"
         echo "${json1}"
         json2="$(echo "${json1}" | "${GITHUB_ACTION_PATH}/convert-dependency-graph.swift")"
         echo "${json2}"
@@ -76,7 +72,7 @@ runs:
         JSON2: ${{ steps.graph.outputs.graph }}
       shell: bash
       run: |
-        curl -fLv -X POST \
+        curl -fLv \
           -H 'Accept: application/vnd.github+json' \
           -H 'Content-Type: application/json' \
           -H "Authorization: Bearer ${TOKEN}" \
