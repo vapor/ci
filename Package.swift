@@ -3,6 +3,12 @@ import PackageDescription
 
 let package = Package(
     name: "sample-testable-package",
+    platforms: [
+        .macOS(.v10_15),
+        .iOS(.v13),
+        .watchOS(.v6),
+        .tvOS(.v13),
+    ],
     products: [
         .executable(name: "SampleTestablePackageRun", targets: ["SampleTestablePackageRun"]),
         .library(name: "SampleTestablePackage", targets: ["SampleTestablePackage"]),

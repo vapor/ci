@@ -37,6 +37,11 @@ on:
         required: false
         default: true
         description: "Set to 'true' to run CodeQL checks. Defaults to 'true'."
+      with_deps_submission:
+        type: boolean
+        required: false
+        default: true
+        description: "Set to 'true' to submit a dependency graph to Github. Defaults to 'true'."
       extra_flags:
         type: string
         required: false
@@ -61,9 +66,27 @@ jobs:
         with: { 'fetch-depth': 0 }
       - name: Run API breakage check
         run: |
-          git config --global --add safe.directory ${GITHUB_WORKSPACE}
+          git config --global --add safe.directory "${GITHUB_WORKSPACE}"
           swift package ${PACKAGE_ROOT} diagnose-api-breaking-changes origin/main ${EXTRA_FLAGS}
   
+  dependency-graph:
+    if: ${{ inputs.with_deps_submission && github.event_name == 'push' }}
+    runs-on: ubuntu-latest
+    container: swift:jammy
+    permissions:
+      contents: write
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Fix Git configuration
+        run: |
+          git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+          apt-get update && apt-get install -y curl
+      - name: Submit dependency graph
+        uses: vapor-community/swift-dependency-submission@v0.1
+        with:
+          path: ${{ inputs.package_root != '' && inputs.package_root || github.workspace }}
+
   code-coverage:
     if: ${{ inputs.with_coverage && !(github.event.pull_request.draft || false) }}
     runs-on: ubuntu-latest
