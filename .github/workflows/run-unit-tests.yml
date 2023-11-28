@@ -109,7 +109,7 @@ jobs:
     if: ${{ inputs.with_gh_codeql && !(github.event.pull_request.draft || false) }}
     runs-on: ubuntu-latest
     container:
-      image: swift:5.8-jammy
+      image: swift:5.9-jammy
     permissions: { actions: write, contents: read, security-events: write }
     timeout-minutes: 60
     steps:
@@ -145,7 +145,7 @@ jobs:
           - swift:5.8-jammy
           - swift:5.9-jammy
           - swiftlang/swift:nightly-5.10-jammy
-          #- swiftlang/swift:nightly-main-jammy
+          - swiftlang/swift:nightly-main-jammy
     runs-on: ubuntu-latest
     container: ${{ matrix.swift-image }}
     timeout-minutes: 60
