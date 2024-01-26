@@ -125,7 +125,7 @@ jobs:
           package_root: ${{ inputs.package_root }}
       - name: Initialize CodeQL
         if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
-        uses: github/codeql-action/init@v2
+        uses: github/codeql-action/init@v3
         with: { languages: swift }
       - name: Perform build
         if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
@@ -133,7 +133,7 @@ jobs:
           swift build ${PACKAGE_ROOT} ${EXTRA_FLAGS}
       - name: Run CodeQL analyze
         if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
-        uses: github/codeql-action/analyze@v2
+        uses: github/codeql-action/analyze@v3
   
   linux-unit:
     if: ${{ !(github.event.pull_request.draft || false) }}
