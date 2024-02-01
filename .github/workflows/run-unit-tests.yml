@@ -59,7 +59,7 @@ jobs:
     if: ${{ inputs.with_public_api_check && !(github.event.pull_request.draft || false) && github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     container: swift:jammy
-    timeout-minutes: 60
+    timeout-minutes: 20
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -91,7 +91,7 @@ jobs:
     if: ${{ inputs.with_coverage && !(github.event.pull_request.draft || false) }}
     runs-on: ubuntu-latest
     container: swift:jammy
-    timeout-minutes: 60
+    timeout-minutes: 30
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -111,7 +111,7 @@ jobs:
     container:
       image: swift:5.9-jammy
     permissions: { actions: write, contents: read, security-events: write }
-    timeout-minutes: 60
+    timeout-minutes: 30
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -167,11 +167,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        macos-version:
-          - macos-13
-        xcode-version:
-          - '~14.3'
-          - 'latest'
+        include:
+          - macos-version: macos-13
+            xcode-version: '~14.3'
+          - macos-version: macos-14
+            xcode-version: latest
     runs-on: ${{ matrix.macos-version }}
     timeout-minutes: 60
     steps:
