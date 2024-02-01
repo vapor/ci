@@ -42,6 +42,11 @@ on:
         required: false
         default: true
         description: "Set to 'true' to submit a dependency graph to Github. Defaults to 'true'."
+      with_nightly_main_swift:
+        type: boolean
+        required: false
+        default: true
+        description: "Set to 'true' to perform tests on Swift nightly main images too. Defaults to 'true'."
       extra_flags:
         type: string
         required: false
@@ -158,7 +163,7 @@ jobs:
         with:
           package_root: ${{ inputs.package_root }}
       - name: Run unit tests
-        if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
+        if: ${{ (inputs.with_nightly_main_swift || (matrix.swift-image != 'swiftlang/swift:nightly-main-jammy')) & steps.swift-check.outputs.swift-compatible == 'true' }}
         run: |
           SWIFT_DETERMINISTIC_HASHING=1 swift test ${PACKAGE_ROOT} ${WITH_TSAN} ${TEST_FILTER} ${EXTRA_FLAGS}
 
