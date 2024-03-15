@@ -67,7 +67,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: GH Runner bug workaround
-        run: 'if [[ "${ImageVersion}" == "20240310.1.0" ]]; then sysctl -w vm.mmap_rnd_bits=28; done'
+        run: 'if [[ "${ImageVersion}" == "20240310.1.0" ]]; then sysctl -w vm.mmap_rnd_bits=28; fi'
       - name: Check out code
         uses: actions/checkout@v4
         with: { 'fetch-depth': 0 }
@@ -86,7 +86,7 @@ jobs:
       contents: write
     steps:
       - name: GH Runner bug workaround
-        run: 'if [[ "${ImageVersion}" == "20240310.1.0" ]]; then sysctl -w vm.mmap_rnd_bits=28; done'
+        run: 'if [[ "${ImageVersion}" == "20240310.1.0" ]]; then sysctl -w vm.mmap_rnd_bits=28; fi'
       - name: Check out code
         uses: actions/checkout@v4
       - name: Fix Git configuration
@@ -107,7 +107,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: GH Runner bug workaround
-        run: 'if [[ "${ImageVersion}" == "20240310.1.0" ]]; then sysctl -w vm.mmap_rnd_bits=28; done'
+        run: 'if [[ "${ImageVersion}" == "20240310.1.0" ]]; then sysctl -w vm.mmap_rnd_bits=28; fi'
       - name: Check out code
         uses: actions/checkout@v4
       - name: Run unit tests for coverage data
@@ -130,7 +130,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: GH Runner bug workaround
-        run: 'if [[ "${ImageVersion}" == "20240310.1.0" ]]; then sysctl -w vm.mmap_rnd_bits=28; done'
+        run: 'if [[ "${ImageVersion}" == "20240310.1.0" ]]; then sysctl -w vm.mmap_rnd_bits=28; fi'
       - name: Check out code
         uses: actions/checkout@v4
       - name: Mark repo safe in non-fake global config
@@ -170,7 +170,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: GH Runner bug workaround
-        run: 'if [[ "${ImageVersion}" == "20240310.1.0" ]]; then sysctl -w vm.mmap_rnd_bits=28; done'
+        run: 'if [[ "${ImageVersion}" == "20240310.1.0" ]]; then sysctl -w vm.mmap_rnd_bits=28; fi'
       - name: Check out code
         uses: actions/checkout@v4
       - name: Check Swift compatibility
