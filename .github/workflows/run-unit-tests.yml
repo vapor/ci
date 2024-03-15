@@ -50,8 +50,7 @@ on:
 env:
   PACKAGE_ROOT: ${{ inputs.package_root != '' && format('--package-path={0}', inputs.package_root) || '' }}
   EXTRA_FLAGS:  ${{ inputs.extra_flags }}
-  WITH_TSAN: false
-  #${{ inputs.with_tsan && '--sanitize=thread' || '' }}
+  WITH_TSAN: ${{ inputs.with_tsan && '' || '' }}
   TEST_FILTER:  ${{ inputs.test_filter != '' && format('--filter={0}', inputs.test_filter) || '' }}
 defaults:
   run:
