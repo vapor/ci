@@ -52,9 +52,6 @@ env:
   EXTRA_FLAGS:  ${{ inputs.extra_flags }}
   WITH_TSAN: ${{ inputs.with_tsan && '' || '' }}
   TEST_FILTER:  ${{ inputs.test_filter != '' && format('--filter={0}', inputs.test_filter) || '' }}
-defaults:
-  run:
-    shell: bash
 
 # We use the unversioned "jammy" docker tag to specify the "latest" Swift release in several jobs.
 jobs:  
@@ -148,13 +145,9 @@ jobs:
           - swift:5.10-jammy
           - swiftlang/swift:nightly-main-jammy
     runs-on: ubuntu-latest
-    container:
-      image: ${{ matrix.swift-image }}
-      options: --privileged
+    container: ${{ matrix.swift-image }}
     timeout-minutes: 60
     steps:
-      - name: GH Runner bug workaround
-        run: 'if [[ "${ImageVersion}" == "20240310.1.0" ]]; then sysctl -w vm.mmap_rnd_bits=28; fi'
       - name: Check out code
         uses: actions/checkout@v4
       - name: Check Swift compatibility
