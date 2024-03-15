@@ -52,15 +52,22 @@ env:
   EXTRA_FLAGS:  ${{ inputs.extra_flags }}
   WITH_TSAN:    ${{ inputs.with_tsan && '--sanitize=thread' || '' }}
   TEST_FILTER:  ${{ inputs.test_filter != '' && format('--filter={0}', inputs.test_filter) || '' }}
+defaults:
+  run:
+    shell: bash
 
 # We use the unversioned "jammy" docker tag to specify the "latest" Swift release in several jobs.
 jobs:  
   api-breakage:
     if: ${{ inputs.with_public_api_check && !(github.event.pull_request.draft || false) && github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
-    container: swift:jammy
+    container:
+      image: swift:jammy
+      options: --privileged
     timeout-minutes: 20
     steps:
+      - name: GH Runner bug workaround
+        run: 'if [[ "${ImageVersion}" == "20240310.1.0" ]]; then sysctl -w vm.mmap_rnd_bits=28; done'
       - name: Check out code
         uses: actions/checkout@v4
         with: { 'fetch-depth': 0 }
@@ -72,10 +79,14 @@ jobs:
   dependency-graph:
     if: ${{ inputs.with_deps_submission && github.event_name == 'push' }}
     runs-on: ubuntu-latest
-    container: swift:jammy
+    container:
+      image: swift:jammy
+      options: --privileged
     permissions:
       contents: write
     steps:
+      - name: GH Runner bug workaround
+        run: 'if [[ "${ImageVersion}" == "20240310.1.0" ]]; then sysctl -w vm.mmap_rnd_bits=28; done'
       - name: Check out code
         uses: actions/checkout@v4
       - name: Fix Git configuration
@@ -90,9 +101,13 @@ jobs:
   code-coverage:
     if: ${{ inputs.with_coverage && !(github.event.pull_request.draft || false) }}
     runs-on: ubuntu-latest
-    container: swift:jammy
+    container:
+      image: swift:jammy
+      options: --privileged
     timeout-minutes: 30
     steps:
+      - name: GH Runner bug workaround
+        run: 'if [[ "${ImageVersion}" == "20240310.1.0" ]]; then sysctl -w vm.mmap_rnd_bits=28; done'
       - name: Check out code
         uses: actions/checkout@v4
       - name: Run unit tests for coverage data
@@ -109,10 +124,13 @@ jobs:
     if: ${{ (false && inputs.with_gh_codeql) && !(github.event.pull_request.draft || false) }}
     runs-on: ubuntu-latest
     container:
-      image: swift:5.10-jammy
+      image: swift:jammy
+      options: --privileged
     permissions: { actions: write, contents: read, security-events: write }
     timeout-minutes: 30
     steps:
+      - name: GH Runner bug workaround
+        run: 'if [[ "${ImageVersion}" == "20240310.1.0" ]]; then sysctl -w vm.mmap_rnd_bits=28; done'
       - name: Check out code
         uses: actions/checkout@v4
       - name: Mark repo safe in non-fake global config
@@ -146,9 +164,13 @@ jobs:
           - swift:5.10-jammy
           - swiftlang/swift:nightly-main-jammy
     runs-on: ubuntu-latest
-    container: ${{ matrix.swift-image }}
+    container:
+      image: ${{ matrix.swift-image }}
+      options: --privileged
     timeout-minutes: 60
     steps:
+      - name: GH Runner bug workaround
+        run: 'if [[ "${ImageVersion}" == "20240310.1.0" ]]; then sysctl -w vm.mmap_rnd_bits=28; done'
       - name: Check out code
         uses: actions/checkout@v4
       - name: Check Swift compatibility
