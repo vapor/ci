@@ -1,4 +1,4 @@
-  name: Run pure unit tests
+name: Run pure unit tests
 on:
   workflow_call:
     inputs:
