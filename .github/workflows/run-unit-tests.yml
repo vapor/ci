@@ -50,7 +50,7 @@ on:
 env:
   PACKAGE_ROOT: ${{ inputs.package_root != '' && format('--package-path={0}', inputs.package_root) || '' }}
   EXTRA_FLAGS:  ${{ inputs.extra_flags }}
-  WITH_TSAN: ${{ inputs.with_tsan && '' || '' }}
+  WITH_TSAN: ${{ inputs.with_tsan && '--sanitize=thread' || '' }}
   TEST_FILTER:  ${{ inputs.test_filter != '' && format('--filter={0}', inputs.test_filter) || '' }}
 
 # We use the unversioned "jammy" docker tag to specify the "latest" Swift release in several jobs.
@@ -158,7 +158,7 @@ jobs:
       - name: Run unit tests
         if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
         run: |
-          SWIFT_DETERMINISTIC_HASHING=1 swift test ${PACKAGE_ROOT} ${WITH_TSAN} ${TEST_FILTER} ${EXTRA_FLAGS}
+          SWIFT_DETERMINISTIC_HASHING=1 swift test ${PACKAGE_ROOT} ${TEST_FILTER} ${EXTRA_FLAGS}
 
   macos-unit:
     if: ${{ !(github.event.pull_request.draft || false) }}
