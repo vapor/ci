@@ -143,6 +143,7 @@ jobs:
           - swift:5.8-jammy
           - swift:5.9-jammy
           - swift:5.10-jammy
+          - swiftlang/swift:nightly-6.0-jammy
           - swiftlang/swift:nightly-main-jammy
     runs-on: ubuntu-latest
     container: ${{ matrix.swift-image }}
