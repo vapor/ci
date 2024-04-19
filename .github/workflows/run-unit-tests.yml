@@ -17,11 +17,6 @@ on:
         required: false
         default: true
         description: "Set to 'true' to collect and upload code coverage data. Defaults to 'false'."
-      coverage_ignores:
-        type: string
-        required: false
-        default: '/Tests/'
-        description: "Additional source-relative paths to ignore when generating code coverage reports."
       with_tsan:
         type: boolean
         required: false
@@ -99,10 +94,10 @@ jobs:
         run: |
           SWIFT_DETERMINISTIC_HASHING=1 swift test ${PACKAGE_ROOT} ${TEST_FILTER} --enable-code-coverage ${EXTRA_FLAGS}
       - name: Upload coverage data
-        uses: vapor/swift-codecov-action@v0.2
+        uses: vapor/swift-codecov-action@v0.3
         with:
+          codecov_token:    ${{ secrets.CODECOV_TOKEN || '' }}
           package_path:     ${{ inputs.package_root }}
-          ignore_paths:     ${{ inputs.coverage_ignores }}
           build_parameters: ${{ inputs.extra_flags }}
   
   gh-codeql:
