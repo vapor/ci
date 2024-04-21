@@ -37,11 +37,11 @@ on:
         required: false
         default: true
         description: "Set to 'true' to submit a dependency graph to Github. Defaults to 'true'."
-      with_nightly_main_swift:
+      with_nightly_swift:
         type: boolean
         required: false
         default: true
-        description: "Set to 'true' to perform tests on Swift nightly main images too. Defaults to 'true'."
+        description: "Set to 'true' to perform tests on Swift nightly images too. Defaults to 'true'."
       extra_flags:
         type: string
         required: false
@@ -54,7 +54,7 @@ env:
   TEST_FILTER:  ${{ inputs.test_filter != '' && format('--filter={0}', inputs.test_filter) || '' }}
 
 # We use the unversioned "jammy" docker tag to specify the "latest" Swift release in several jobs.
-jobs:  
+jobs:
   api-breakage:
     if: ${{ inputs.with_public_api_check && !(github.event.pull_request.draft || false) && github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
@@ -68,7 +68,7 @@ jobs:
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
           swift package ${PACKAGE_ROOT} diagnose-api-breaking-changes origin/main ${EXTRA_FLAGS}
-  
+
   dependency-graph:
     if: ${{ inputs.with_deps_submission && github.event_name == 'push' }}
     runs-on: ubuntu-latest
@@ -104,7 +104,7 @@ jobs:
           codecov_token:    ${{ secrets.CODECOV_TOKEN || '' }}
           package_path:     ${{ inputs.package_root }}
           build_parameters: ${{ inputs.extra_flags }}
-  
+
   gh-codeql:
     if: ${{ (false && inputs.with_gh_codeql) && !(github.event.pull_request.draft || false) }}
     runs-on: ubuntu-latest
@@ -133,7 +133,7 @@ jobs:
       - name: Run CodeQL analyze
         if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
         uses: github/codeql-action/analyze@v3
-  
+
   linux-unit:
     if: ${{ !(github.event.pull_request.draft || false) }}
     strategy:
@@ -157,7 +157,7 @@ jobs:
         with:
           package_root: ${{ inputs.package_root }}
       - name: Run unit tests
-        if: ${{ steps.swift-check.outputs.swift-compatible == 'true' && (inputs.with_nightly_main_swift || (matrix.swift-image != 'swiftlang/swift:nightly-main-jammy')) }}
+        if: ${{ steps.swift-check.outputs.swift-compatible == 'true' && (inputs.with_nightly_swift || !contains(matrix.swift-image, 'nightly')) }}
         run: |
           SWIFT_DETERMINISTIC_HASHING=1 swift test ${PACKAGE_ROOT} ${WITH_TSAN} ${TEST_FILTER} ${EXTRA_FLAGS}
 
