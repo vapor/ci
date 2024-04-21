@@ -17,11 +17,6 @@ on:
         required: false
         default: true
         description: "Set to 'true' to collect and upload code coverage data. Defaults to 'false'."
-      coverage_ignores:
-        type: string
-        required: false
-        default: '/Tests/'
-        description: "Additional source-relative paths to ignore when generating code coverage reports."
       with_tsan:
         type: boolean
         required: false
@@ -55,7 +50,7 @@ on:
 env:
   PACKAGE_ROOT: ${{ inputs.package_root != '' && format('--package-path={0}', inputs.package_root) || '' }}
   EXTRA_FLAGS:  ${{ inputs.extra_flags }}
-  WITH_TSAN:    ${{ inputs.with_tsan && '--sanitize=thread' || '' }}
+  WITH_TSAN: ${{ inputs.with_tsan && '--sanitize=thread' || '' }}
   TEST_FILTER:  ${{ inputs.test_filter != '' && format('--filter={0}', inputs.test_filter) || '' }}
 
 # We use the unversioned "jammy" docker tag to specify the "latest" Swift release in several jobs.
@@ -64,7 +59,7 @@ jobs:
     if: ${{ inputs.with_public_api_check && !(github.event.pull_request.draft || false) && github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     container: swift:jammy
-    timeout-minutes: 60
+    timeout-minutes: 20
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -96,7 +91,7 @@ jobs:
     if: ${{ inputs.with_coverage && !(github.event.pull_request.draft || false) }}
     runs-on: ubuntu-latest
     container: swift:jammy
-    timeout-minutes: 60
+    timeout-minutes: 30
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -104,19 +99,18 @@ jobs:
         run: |
           SWIFT_DETERMINISTIC_HASHING=1 swift test ${PACKAGE_ROOT} ${TEST_FILTER} --enable-code-coverage ${EXTRA_FLAGS}
       - name: Upload coverage data
-        uses: vapor/swift-codecov-action@v0.2
+        uses: vapor/swift-codecov-action@v0.3
         with:
+          codecov_token:    ${{ secrets.CODECOV_TOKEN || '' }}
           package_path:     ${{ inputs.package_root }}
-          ignore_paths:     ${{ inputs.coverage_ignores }}
           build_parameters: ${{ inputs.extra_flags }}
   
   gh-codeql:
     if: ${{ (false && inputs.with_gh_codeql) && !(github.event.pull_request.draft || false) }}
     runs-on: ubuntu-latest
-    container:
-      image: swift:5.9-jammy
+    container: swift:jammy
     permissions: { actions: write, contents: read, security-events: write }
-    timeout-minutes: 60
+    timeout-minutes: 30
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -146,10 +140,10 @@ jobs:
       fail-fast: false
       matrix:
         swift-image:
-          - swift:5.7-jammy
           - swift:5.8-jammy
           - swift:5.9-jammy
-          - swiftlang/swift:nightly-5.10-jammy
+          - swift:5.10-jammy
+          - swiftlang/swift:nightly-6.0-jammy
           - swiftlang/swift:nightly-main-jammy
     runs-on: ubuntu-latest
     container: ${{ matrix.swift-image }}
@@ -172,11 +166,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        macos-version:
-          - macos-13
-        xcode-version:
-          - '~14.3'
-          - 'latest'
+        include:
+          - macos-version: macos-13
+            xcode-version: '~14.3'
+          - macos-version: macos-14
+            xcode-version: latest
     runs-on: ${{ matrix.macos-version }}
     timeout-minutes: 60
     steps:
@@ -202,15 +196,13 @@ jobs:
 #       fail-fast: false
 #       matrix:
 #         swift-version:
-#           - 5.7
 #           - 5.8
 #           - 5.9
 #           - 5.10
 #         include:
-#           - { swift-version: 5.7, swift-branch: swift-5.7.3-RELEASE, swift-tag: 5.7.3-RELEASE }
 #           - { swift-version: 5.8, swift-branch: swift-5.8.1-RELEASE, swift-tag: 5.8.1-RELEASE }
-#           - { swift-version: 5.9, swift-branch: swift-5.9-RELEASE, swift-tag: 5.9-RELEASE }
-#           - { swift-version: 5.10, swift-branch: swift-5.10-branch, swift-tag: 5.10-DEVELOPMENT-SNAPSHOT-2023-09-19-a }
+#           - { swift-version: 5.9, swift-branch: swift-5.9.2-RELEASE, swift-tag: 5.9.2-RELEASE }
+#           - { swift-version: 5.10, swift-branch: swift-5.10-RELEASE, swift-tag: 5.10-RELEASE }
 #     runs-on: windows-latest
 #    timeout-minutes: 60
 #     steps:
