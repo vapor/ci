@@ -42,6 +42,9 @@ on:
         required: false
         default: ''
         description: "Additional 'swift test' flags to be applied on when testing on all platforms."
+    secrets:
+      CODECOV_TOKEN:
+        required: false
 env:
   PACKAGE_ROOT: ${{ inputs.package_root != '' && format('--package-path={0}', inputs.package_root) || '' }}
   EXTRA_FLAGS:  ${{ inputs.extra_flags }}
