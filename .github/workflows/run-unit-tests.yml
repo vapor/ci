@@ -100,34 +100,34 @@ jobs:
           package_path:     ${{ inputs.package_root }}
           build_parameters: ${{ inputs.extra_flags }}
   
-  gh-codeql:
-    if: ${{ (false && inputs.with_gh_codeql) && !(github.event.pull_request.draft || false) }}
-    runs-on: ubuntu-latest
-    container: swift:jammy
-    permissions: { actions: write, contents: read, security-events: write }
-    timeout-minutes: 30
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-      - name: Mark repo safe in non-fake global config
-        run: |
-          git config --global --add safe.directory "${GITHUB_WORKSPACE}"
-      - name: Check Swift compatibility
-        id: swift-check
-        uses: vapor/ci/.github/actions/check-compatible-swift@main
-        with:
-          package_root: ${{ inputs.package_root }}
-      - name: Initialize CodeQL
-        if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
-        uses: github/codeql-action/init@v3
-        with: { languages: swift }
-      - name: Perform build
-        if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
-        run: |
-          swift build ${PACKAGE_ROOT} ${EXTRA_FLAGS}
-      - name: Run CodeQL analyze
-        if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
-        uses: github/codeql-action/analyze@v3
+#   gh-codeql:
+#     if: ${{ (inputs.with_gh_codeql) && !(github.event.pull_request.draft || false) }}
+#     runs-on: ubuntu-latest
+#     container: swift:jammy
+#     permissions: { actions: write, contents: read, security-events: write }
+#     timeout-minutes: 30
+#     steps:
+#       - name: Check out code
+#         uses: actions/checkout@v4
+#       - name: Mark repo safe in non-fake global config
+#         run: |
+#           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+#       - name: Check Swift compatibility
+#         id: swift-check
+#         uses: vapor/ci/.github/actions/check-compatible-swift@main
+#         with:
+#           package_root: ${{ inputs.package_root }}
+#       - name: Initialize CodeQL
+#         if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
+#         uses: github/codeql-action/init@v3
+#         with: { languages: swift }
+#       - name: Perform build
+#         if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
+#         run: |
+#           swift build ${PACKAGE_ROOT} ${EXTRA_FLAGS}
+#       - name: Run CodeQL analyze
+#         if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
+#         uses: github/codeql-action/analyze@v3
   
   linux-unit:
     if: ${{ !(github.event.pull_request.draft || false) }}
