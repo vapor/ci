@@ -12,7 +12,7 @@ on:
         required: false
         default: true
         description: "Set to 'true' to run tests with Thread Sanitizer. Defaults to 'true'."
-      with_public_api_check:
+      with_api_check:
         type: boolean
         required: false
         default: true
@@ -33,5 +33,5 @@ jobs:
     with:
       with_coverage: ${{ inputs.with_coverage || false }}
       with_tsan: ${{ inputs.with_tsan || false }}
-      with_public_api_check: ${{ inputs.with_public_api_check || false }}
+      with_api_check: ${{ inputs.with_api_check || false }}
       with_gh_codeql: ${{ inputs.with_gh_codeql || true }}
