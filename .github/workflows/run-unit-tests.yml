@@ -105,7 +105,13 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v4
+      - name: Check Swift compatibility
+        id: swift-check
+        uses: vapor/ci/.github/actions/check-compatible-swift@main
+        with:
+          package_root: ${{ inputs.package_root }}
       - name: Run unit tests
+        if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
         run: |
           SWIFT_DETERMINISTIC_HASHING=1 \
           swift test \
@@ -141,7 +147,13 @@ jobs:
           xcode-version: ${{ matrix.xcode-version }}
       - name: Check out code
         uses: actions/checkout@v4
+      - name: Check Swift compatibility
+        id: swift-check
+        uses: vapor/ci/.github/actions/check-compatible-swift@main
+        with:
+          package_root: ${{ inputs.package_root }}
       - name: Run unit tests
+        if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
         run: |
           SWIFT_DETERMINISTIC_HASHING=1 \
           swift test \
