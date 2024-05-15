@@ -121,7 +121,7 @@ jobs:
             ${TEST_FILTER} \
             ${EXTRA_FLAGS}
       - name: Upload coverage data
-        if: ${{ inputs.with_coverage }}
+        if: ${{ (steps.swift-check.outputs.swift-compatible == 'true') && inputs.with_coverage }}
         uses: vapor/swift-codecov-action@v0.3
         with:
           codecov_token:    ${{ secrets.CODECOV_TOKEN || '' }}
@@ -163,7 +163,7 @@ jobs:
             ${TEST_FILTER} \
             ${EXTRA_FLAGS}
       - name: Upload coverage data
-        if: ${{ inputs.with_coverage }}
+        if: ${{ (steps.swift-check.outputs.swift-compatible == 'true') && inputs.with_coverage }}
         uses: vapor/swift-codecov-action@v0.3
         with:
           codecov_token:    ${{ secrets.CODECOV_TOKEN || '' }}
