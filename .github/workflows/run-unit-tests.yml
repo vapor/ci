@@ -55,8 +55,8 @@ env:
 jobs:  
   api-breakage:
     if: ${{ inputs.with_api_check && github.event_name == 'pull_request' && !github.event.pull_request.draft }}
-    runs-on: ubuntu-latest
-    container: swift:jammy
+    runs-on: ubuntu-24.04
+    container: swift:noble
     timeout-minutes: 30
     steps:
       - name: Check out code
@@ -69,7 +69,7 @@ jobs:
   
 #   gh-codeql:
 #     if: ${{ inputs.with_gh_codeql && !(github.event.pull_request.draft || false) }}
-#     runs-on: ubuntu-latest
+#     runs-on: ubuntu-24.04
 #     permissions: { actions: write, contents: read, security-events: write }
 #     timeout-minutes: 30
 #     steps:
@@ -99,7 +99,7 @@ jobs:
           - swift:5.10-noble
           - swiftlang/swift:nightly-6.0-jammy
           - swiftlang/swift:nightly-main-jammy
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container: ${{ matrix.swift-image }}
     timeout-minutes: 60
     steps:
@@ -182,7 +182,7 @@ jobs:
 #         include:
 #           - { swift-version: 5.8, swift-branch: swift-5.8.1-RELEASE, swift-tag: 5.8.1-RELEASE }
 #           - { swift-version: 5.9, swift-branch: swift-5.9.2-RELEASE, swift-tag: 5.9.2-RELEASE }
-#           - { swift-version: 5.10, swift-branch: swift-5.10-RELEASE, swift-tag: 5.10-RELEASE }
+#           - { swift-version: 5.10, swift-branch: swift-5.10.1-RELEASE, swift-tag: 5.10.1-RELEASE }
 #     runs-on: windows-latest
 #    timeout-minutes: 60
 #     steps:
