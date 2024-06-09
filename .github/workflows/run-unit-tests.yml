@@ -96,7 +96,7 @@ jobs:
         swift-image:
           - swift:5.8-jammy
           - swift:5.9-jammy
-          - swift:5.10-jammy
+          - swift:5.10-noble
           - swiftlang/swift:nightly-6.0-jammy
           - swiftlang/swift:nightly-main-jammy
     runs-on: ubuntu-latest
