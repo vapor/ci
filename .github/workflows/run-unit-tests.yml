@@ -55,7 +55,7 @@ env:
 jobs:  
   api-breakage:
     if: ${{ inputs.with_api_check && github.event_name == 'pull_request' && !github.event.pull_request.draft }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     container: swift:noble
     timeout-minutes: 30
     steps:
@@ -69,7 +69,7 @@ jobs:
   
 #   gh-codeql:
 #     if: ${{ inputs.with_gh_codeql && !(github.event.pull_request.draft || false) }}
-#     runs-on: ubuntu-24.04
+#     runs-on: ubuntu-latest
 #     permissions: { actions: write, contents: read, security-events: write }
 #     timeout-minutes: 30
 #     steps:
@@ -99,7 +99,7 @@ jobs:
           - swift:5.10-noble
           - swiftlang/swift:nightly-6.0-jammy
           - swiftlang/swift:nightly-main-jammy
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     container: ${{ matrix.swift-image }}
     timeout-minutes: 60
     steps:
