@@ -22,6 +22,11 @@ on:
         required: false
         default: true
         description: "Set to 'true' to run tests with Thread Sanitizer. Defaults to 'true'."
+      warnings_as_errors:
+        type: boolean
+        required: false
+        default: true
+        description: "Set to 'true' to treat warnings as errors. Defaults to 'false'."
       with_api_check:
         type: boolean
         required: false
@@ -49,6 +54,7 @@ env:
   PACKAGE_ROOT: ${{ inputs.package_root != '' && format('--package-path={0}', inputs.package_root) || '' }}
   EXTRA_FLAGS:  ${{ inputs.extra_flags }}
   WITH_TSAN: ${{ inputs.with_tsan && '--sanitize=thread' || '' }}
+  WARNINGS_AS_ERRORS: ${{ inputs.warnings_as_errors && '-Xswiftc -warnings-as-errors' || '' }}
   TEST_FILTER:  ${{ inputs.test_filter != '' && format('--filter={0}', inputs.test_filter) || '' }}
   WITH_COVERAGE: ${{ inputs.with_coverage && '--enable-code-coverage' || '' }}
 
@@ -117,6 +123,7 @@ jobs:
           swift test \
             ${PACKAGE_ROOT} \
             ${WITH_TSAN} \
+            ${WARNINGS_AS_ERRORS} \
             ${WITH_COVERAGE} \
             ${TEST_FILTER} \
             ${EXTRA_FLAGS}
