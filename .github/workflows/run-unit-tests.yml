@@ -217,11 +217,12 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v4
       - name: Read config file 
-        # if .swift-format is not provided in the repo, use the default config
+        # if .swift-format is not provided in the repo, use the default config file from CI
         run: |
           if [ ! -f .swift-format ]; then
             echo "No .swift-format file found, using default configuration."
-            cp /root/.swift-format .swift-format
+            apt-get update && apt-get install -y curl
+            curl -O https://raw.githubusercontent.com/vapor/ci/refs/heads/main/.swift-format
           fi
       - name: Lint
         run: swift-format lint --recursive --strict --parallel .
