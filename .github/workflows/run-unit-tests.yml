@@ -47,6 +47,11 @@ on:
         required: false
         default: false
         description: "Set to 'true' to run swift-format's lint process. Defaults to 'false'."
+      with_windows:
+        type: boolean
+        required: false
+        default: false
+        description: "Set to 'true' to run tests on Windows. Defaults to 'false'."
       extra_flags:
         type: string
         required: false
@@ -181,32 +186,32 @@ jobs:
           package_path:     ${{ inputs.package_root }}
           build_parameters: ${{ inputs.extra_flags }}
 
-#   windows-unit:
-#     if: ${{ !(github.event.pull_request.draft || false) }}
-#     strategy:
-#       fail-fast: false
-#       matrix:
-#         swift-version:
-#           - 5.9
-#           - 5.10
-#           - 6.0
-#         include:
-#           - { swift-version: 5.9, swift-branch: swift-5.9.2-RELEASE, swift-tag: 5.9.2-RELEASE }
-#           - { swift-version: 5.10, swift-branch: swift-5.10.1-RELEASE, swift-tag: 5.10.1-RELEASE }
-#           - { swift-version: 6.0, swift-branch: swift-6.0.1-RELEASE, swift-tag: 6.0.1-RELEASE }
-#     runs-on: windows-latest
-#    timeout-minutes: 60
-#     steps:
-#       - name: Install Windows Swift toolchain
-#         uses: compnerd/gha-setup-swift@main
-#         with:
-#           branch: ${{ matrix.swift-branch }}
-#           tag: ${{ matrix.swift-tag }}
-#       - name: Check out code
-#         uses: actions/checkout@v4
-#       - name: Run unit tests
-#         run: |
-#           SWIFT_DETERMINISTIC_HASHING=1 swift test ${PACKAGE_ROOT} ${WITH_TSAN} ${TEST_FILTER} ${EXTRA_FLAGS}
+  windows-unit:
+    if: ${{ !(github.event.pull_request.draft || false) && inputs.with_windows }}
+    strategy:
+      fail-fast: false
+      matrix:
+        swift-version:
+          # - 5.9
+          # - 5.10
+          - 6.0
+        include:
+          # - { swift-version: 5.9, swift-branch: swift-5.9.2-RELEASE, swift-tag: 5.9.2-RELEASE }
+          # - { swift-version: 5.10, swift-branch: swift-5.10.1-RELEASE, swift-tag: 5.10.1-RELEASE }
+          - { swift-version: 6.0, swift-branch: swift-6.0.1-RELEASE, swift-tag: 6.0.1-RELEASE }
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - name: Install Windows Swift toolchain
+        uses: compnerd/gha-setup-swift@main
+        with:
+          branch: ${{ matrix.swift-branch }}
+          tag: ${{ matrix.swift-tag }}
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Run unit tests
+        run: |
+          SWIFT_DETERMINISTIC_HASHING=1 swift test ${PACKAGE_ROOT} ${WITH_TSAN} ${TEST_FILTER} ${EXTRA_FLAGS}
 
   lint:
     if: ${{ inputs.with_linting }}
@@ -222,7 +227,7 @@ jobs:
           if [ ! -f .swift-format ]; then
             echo "No .swift-format file found, using default configuration."
             apt-get update && apt-get install -y curl
-            curl -O https://raw.githubusercontent.com/vapor/ci/refs/heads/main/.swift-format
+            curl -O https://raw.githubusercontent.com/vapor/contributing/refs/heads/main/.swift-format
           fi
       - name: Lint
         run: swift-format lint --recursive --strict --parallel .
