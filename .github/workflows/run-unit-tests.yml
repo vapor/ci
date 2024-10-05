@@ -42,6 +42,11 @@ on:
         required: false
         default: true
         description: "Set to 'true' to submit a dependency graph to Github. Defaults to 'true'."
+      with_linting: 
+        type: boolean
+        required: false
+        default: false
+        description: "Set to 'true' to run swift-format's lint process. Defaults to 'false'."
       extra_flags:
         type: string
         required: false
@@ -58,7 +63,7 @@ env:
   TEST_FILTER:  ${{ inputs.test_filter != '' && format('--filter={0}', inputs.test_filter) || '' }}
   WITH_COVERAGE: ${{ inputs.with_coverage && '--enable-code-coverage' || '' }}
 
-jobs:  
+jobs:
   api-breakage:
     if: ${{ inputs.with_api_check && github.event_name == 'pull_request' && !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
@@ -202,3 +207,21 @@ jobs:
 #       - name: Run unit tests
 #         run: |
 #           SWIFT_DETERMINISTIC_HASHING=1 swift test ${PACKAGE_ROOT} ${WITH_TSAN} ${TEST_FILTER} ${EXTRA_FLAGS}
+
+  lint:
+    if: ${{ inputs.with_linting }}
+    runs-on: ubuntu-latest
+    container: swift:6.0-noble
+    timeout-minutes: 30
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Read config file 
+        # if .swift-format is not provided in the repo, use the default config
+        run: |
+          if [ ! -f .swift-format ]; then
+            echo "No .swift-format file found, using default configuration."
+            cp /root/.swift-format .swift-format
+          fi
+      - name: Lint
+        run: swift-format lint --recursive --strict --parallel .

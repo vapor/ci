@@ -27,6 +27,11 @@ on:
         required: false
         default: true
         description: "Set to 'true' to run CodeQL checks. Defaults to 'true'."
+      with_linting: 
+        type: boolean
+        required: false
+        default: false
+        description: "Set to 'true' to run swift-format's lint process. Defaults to 'false'."
   push: { branches: [ main ] }
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -41,3 +46,4 @@ jobs:
       with_api_check: ${{ inputs.with_api_check || false }}
       with_gh_codeql: ${{ inputs.with_gh_codeql || true }}
       warnings_as_errors: ${{ inputs.warnings_as_errors || false }}
+      with_linting: ${{ inputs.with_linting || false }}
