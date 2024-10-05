@@ -47,6 +47,11 @@ on:
         required: false
         default: false
         description: "Set to 'true' to run swift-format's lint process. Defaults to 'false'."
+      with_windows:
+        type: boolean
+        required: false
+        default: false
+        description: "Set to 'true' to run tests on Windows. Defaults to 'false'."
       extra_flags:
         type: string
         required: false
@@ -182,7 +187,7 @@ jobs:
           build_parameters: ${{ inputs.extra_flags }}
 
   windows-unit:
-    if: ${{ !(github.event.pull_request.draft || false) }}
+    if: ${{ !(github.event.pull_request.draft || false) && inputs.with_windows }}
     strategy:
       fail-fast: false
       matrix:
