@@ -222,7 +222,7 @@ jobs:
           if [ ! -f .swift-format ]; then
             echo "No .swift-format file found, using default configuration."
             apt-get update && apt-get install -y curl
-            curl -O https://raw.githubusercontent.com/vapor/ci/refs/heads/lint-job/.swift-format
+            curl -O https://raw.githubusercontent.com/vapor/ci/refs/heads/main/.swift-format
           fi
       - name: Lint
         run: swift-format lint --recursive --strict --parallel .
