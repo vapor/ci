@@ -72,11 +72,11 @@ on:
         required: false
         default: ''
         description: "Additional 'swift build' flags to be applied on when compiling with MUSL."
-      ios_xcodebuild_flag:
+      ios_xcodebuild_action:
         type: string
         required: false
         default: 'test'
-        description: "Flag to pass to xcodebuild when running iOS tests. Defaults to 'test'. Set to '' to just compile and not run tests."
+        description: "Action to pass to xcodebuild when running iOS tests. Defaults to 'test'. Set to '' to just compile and not run tests."
     secrets:
       CODECOV_TOKEN:
         required: false
@@ -89,6 +89,7 @@ env:
   TEST_FILTER:  ${{ inputs.test_filter != '' && format('--filter={0}', inputs.test_filter) || '' }}
   WITH_COVERAGE: ${{ inputs.with_coverage && '--enable-code-coverage' || '' }}
   IOS_SCHEME_NAME: ${{ inputs.ios_scheme_name }}
+  IOS_XCODEBUILD_ACTION: ${{ inputs.ios_xcodebuild_action }}
 
 jobs:
   api-breakage:
@@ -246,7 +247,7 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v4
       - name: Run iOS Tests
-        run: xcodebuild test -scheme ${IOS_SCHEME_NAME} -destination 'platform=iOS Simulator,OS=18.0,name=iPhone 16 Pro'
+        run: xcodebuild ${IOS_XCODEBUILD_ACTION} -scheme ${IOS_SCHEME_NAME} -destination 'platform=iOS Simulator,OS=18.0,name=iPhone 16 Pro'
 
   lint:
     if: ${{ inputs.with_linting }}
