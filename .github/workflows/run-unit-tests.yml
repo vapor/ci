@@ -52,17 +52,28 @@ on:
         required: false
         default: false
         description: "Set to 'true' to run tests on Windows. Defaults to 'false'."
+      with_musl:
+        type: boolean
+        required: false
+        default: false
+        description: "Set to 'true' to build with the Static Linux SDK to test MUSL compatibility. Defaults to 'false'."
       extra_flags:
         type: string
         required: false
         default: ''
         description: "Additional 'swift test' flags to be applied on when testing on all platforms."
+      extra_musl_flags:
+        type: string
+        required: false
+        default: ''
+        description: "Additional 'swift build' flags to be applied on when compiling with MUSL."
     secrets:
       CODECOV_TOKEN:
         required: false
 env:
   PACKAGE_ROOT: ${{ inputs.package_root != '' && format('--package-path={0}', inputs.package_root) || '' }}
   EXTRA_FLAGS:  ${{ inputs.extra_flags }}
+  EXTRA_MUSL_FLAGS: ${{ inputs.extra_musl_flags }}
   WITH_TSAN: ${{ inputs.with_tsan && '--sanitize=thread' || '' }}
   WARNINGS_AS_ERRORS: ${{ inputs.warnings_as_errors && '-Xswiftc -warnings-as-errors' || '' }}
   TEST_FILTER:  ${{ inputs.test_filter != '' && format('--filter={0}', inputs.test_filter) || '' }}
@@ -231,3 +242,16 @@ jobs:
           fi
       - name: Lint
         run: swift-format lint --recursive --strict --parallel .
+
+  musl:
+    if: ${{ !(github.event.pull_request.draft || false) && inputs.with_musl }}
+    runs-on: ubuntu-latest
+    container: swift:6.0-noble
+    timeout-minutes: 30
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Install SDK
+        run: swift sdk install https://download.swift.org/swift-6.0.1-release/static-sdk/swift-6.0.1-RELEASE/swift-6.0.1-RELEASE_static-linux-0.0.1.artifactbundle.tar.gz --checksum d4f46ba40e11e697387468e18987ee622908bc350310d8af54eb5e17c2ff5481
+      - name: Build
+        run: swift build --swift-sdk x86_64-swift-linux-musl ${PACKAGE_PATH} ${EXTRA_FLAGS} ${EXTRA_MUSL_FLAGS} ${WARNINGS_AS_ERRORS}
