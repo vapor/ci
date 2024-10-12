@@ -57,6 +57,11 @@ on:
         required: false
         default: false
         description: "Set to 'true' to build with the Static Linux SDK to test MUSL compatibility. Defaults to 'false'."
+      with_ios:
+        type: string
+        required: false
+        default: ''
+        description: "Set to the scheme name in Xcode to run tests on iOS. Defaults to '' which won't run any tests."
       extra_flags:
         type: string
         required: false
@@ -78,6 +83,7 @@ env:
   WARNINGS_AS_ERRORS: ${{ inputs.warnings_as_errors && '-Xswiftc -warnings-as-errors' || '' }}
   TEST_FILTER:  ${{ inputs.test_filter != '' && format('--filter={0}', inputs.test_filter) || '' }}
   WITH_COVERAGE: ${{ inputs.with_coverage && '--enable-code-coverage' || '' }}
+  IOS_SCHEME_NAME: ${{ inputs.with_ios }}
 
 jobs:
   api-breakage:
@@ -223,6 +229,19 @@ jobs:
       - name: Run unit tests
         run: |
           swift test ${PACKAGE_ROOT} ${WITH_TSAN} ${TEST_FILTER} ${EXTRA_FLAGS}
+
+  ios-unit:
+    if: ${{ !(github.event.pull_request.draft || false) && inputs.with_ios != '' }}
+    runs-on: macos-latest
+    steps:
+      - name: Select appropriate Xcode version
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: 16.0
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Run iOS Tests
+        run: xcodebuild test -scheme ${IOS_SCHEME_NAME} -destination 'platform=iOS Simulator,OS=18.0,name=iPhone 16 Pro'
 
   lint:
     if: ${{ inputs.with_linting }}
