@@ -57,6 +57,11 @@ on:
         required: false
         default: false
         description: "Set to 'true' to build with the Static Linux SDK to test MUSL compatibility. Defaults to 'false'."
+      ios_scheme_name:
+        type: string
+        required: false
+        default: ''
+        description: "Set to the scheme name in Xcode to run tests on iOS. Defaults to '' which won't run any tests."
       extra_flags:
         type: string
         required: false
@@ -67,6 +72,11 @@ on:
         required: false
         default: ''
         description: "Additional 'swift build' flags to be applied on when compiling with MUSL."
+      ios_xcodebuild_action:
+        type: string
+        required: false
+        default: 'test'
+        description: "Action to pass to xcodebuild when running iOS tests. Defaults to 'test'. Set to '' to just compile and not run tests."
     secrets:
       CODECOV_TOKEN:
         required: false
@@ -78,6 +88,8 @@ env:
   WARNINGS_AS_ERRORS: ${{ inputs.warnings_as_errors && '-Xswiftc -warnings-as-errors' || '' }}
   TEST_FILTER:  ${{ inputs.test_filter != '' && format('--filter={0}', inputs.test_filter) || '' }}
   WITH_COVERAGE: ${{ inputs.with_coverage && '--enable-code-coverage' || '' }}
+  IOS_SCHEME_NAME: ${{ inputs.ios_scheme_name }}
+  IOS_XCODEBUILD_ACTION: ${{ inputs.ios_xcodebuild_action }}
 
 jobs:
   api-breakage:
@@ -223,6 +235,19 @@ jobs:
       - name: Run unit tests
         run: |
           swift test ${PACKAGE_ROOT} ${WITH_TSAN} ${TEST_FILTER} ${EXTRA_FLAGS}
+
+  ios-unit:
+    if: ${{ !(github.event.pull_request.draft || false) && inputs.ios_scheme_name != '' }}
+    runs-on: macos-15
+    steps:
+      - name: Select appropriate Xcode version
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Run iOS Tests
+        run: xcodebuild ${IOS_XCODEBUILD_ACTION} -scheme ${IOS_SCHEME_NAME} -destination 'platform=iOS Simulator,OS=18.0,name=iPhone 16 Pro'
 
   lint:
     if: ${{ inputs.with_linting }}
