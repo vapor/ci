@@ -57,7 +57,7 @@ on:
         required: false
         default: false
         description: "Set to 'true' to build with the Static Linux SDK to test MUSL compatibility. Defaults to 'false'."
-      with_ios:
+      ios_scheme_name:
         type: string
         required: false
         default: ''
@@ -72,6 +72,11 @@ on:
         required: false
         default: ''
         description: "Additional 'swift build' flags to be applied on when compiling with MUSL."
+      ios_xcodebuild_flag:
+        type: string
+        required: false
+        default: 'test'
+        description: "Flag to pass to xcodebuild when running iOS tests. Defaults to 'test'. Set to '' to just compile and not run tests."
     secrets:
       CODECOV_TOKEN:
         required: false
@@ -83,7 +88,7 @@ env:
   WARNINGS_AS_ERRORS: ${{ inputs.warnings_as_errors && '-Xswiftc -warnings-as-errors' || '' }}
   TEST_FILTER:  ${{ inputs.test_filter != '' && format('--filter={0}', inputs.test_filter) || '' }}
   WITH_COVERAGE: ${{ inputs.with_coverage && '--enable-code-coverage' || '' }}
-  IOS_SCHEME_NAME: ${{ inputs.with_ios }}
+  IOS_SCHEME_NAME: ${{ inputs.ios_scheme_name }}
 
 jobs:
   api-breakage:
@@ -231,7 +236,7 @@ jobs:
           swift test ${PACKAGE_ROOT} ${WITH_TSAN} ${TEST_FILTER} ${EXTRA_FLAGS}
 
   ios-unit:
-    if: ${{ !(github.event.pull_request.draft || false) && inputs.with_ios != '' }}
+    if: ${{ !(github.event.pull_request.draft || false) && inputs.ios_scheme_name != '' }}
     runs-on: macos-latest
     steps:
       - name: Select appropriate Xcode version
