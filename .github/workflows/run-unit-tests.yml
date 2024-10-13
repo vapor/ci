@@ -177,6 +177,8 @@ jobs:
             xcode-version: '~15.2'
           - macos-version: macos-14
             xcode-version: latest-stable
+          - macos-version: macos-15
+            xcode-version: latest-stable
     runs-on: ${{ matrix.macos-version }}
     timeout-minutes: 60
     steps:
