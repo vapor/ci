@@ -39,8 +39,12 @@ runs:
 
           if [ "$(uname)" = "Darwin" ]; then
             platform_version=$(parse_version $(swift package dump-package | jq -r '.platforms[] | select(.platformName == "macos") | .version'))
-            current_platform=$(parse_version $(sw_vers -productVersion))
-            platform_is_compatible=$((( ${platform_version} <= ${current_platform} )) && echo true || echo false)
+            if [ "${platform_version}" = "null" ] || [ -z "${platform_version}" ]; then
+              platform_is_compatible=true
+            else
+              current_platform=$(parse_version $(sw_vers -productVersion))
+              platform_is_compatible=$((( ${platform_version} <= ${current_platform} )) && echo true || echo false)
+            fi
           else
             platform_is_compatible=true
           fi
