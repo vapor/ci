@@ -38,7 +38,7 @@ runs:
           swift_is_compatible=$((( ${package_version} <= ${toolchain_version} )) && echo true || echo false)
 
           if [ "$(uname)" = "Darwin" ]; then
-            brew install jq -y
+            brew install jq
             platform_version=$(parse_version $(swift package dump-package | jq -r '.platforms[] | select(.platformName == "macos") | .version'))
             current_platform=$(parse_version $(sw_vers -productVersion))
             platform_is_compatible=$((( ${platform_version} <= ${current_platform} )) && echo true || echo false)
