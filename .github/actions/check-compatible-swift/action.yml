@@ -1,6 +1,6 @@
 name: check-compatible-swift
 description: >
-  Determines whether the default Swift toolchain presently available is new enough to
+  Determines whether the default Swift toolchain and platform version presently available is new enough to
   satisfy the minimum Swift version required by the package in the current directory.
 
 inputs:
@@ -18,7 +18,7 @@ outputs:
 runs:
   using: composite
   steps:
-      - name: Compare package's Swift version to installed
+      - name: Compare package's Swift and platform versions to the installed
         id: swift-version-check
         env:
           PACKAGE_ROOT: ${{ inputs.package_root != '' && format('--package-path={0}', inputs.package_root) || '' }}
@@ -35,5 +35,13 @@ runs:
           toolchain_version=$(parse_version $(swift package --version | cut -c31-))
           package_version=$(parse_version $(swift package ${PACKAGE_ROOT} tools-version))
           
-          is_compatible=$((( ${package_version} <= ${toolchain_version} )) && echo true || echo false)
-          echo "ok=${is_compatible}" >>"${GITHUB_OUTPUT}"
+          swift_is_compatible=$((( ${package_version} <= ${toolchain_version} )) && echo true || echo false)
+
+          if [ "$(uname)" = "Darwin" ]; then
+            brew install jq -y
+            platform_version=$(parse_version $(swift package dump-package | jq -r '.platforms[] | select(.platformName == "macos") | .version'))
+            current_platform=$(parse_version $(sw_vers -productVersion))
+            platform_is_compatible=$((( ${platform_version} <= ${current_platform} )) && echo true || echo false)
+          fi
+
+          echo "ok=$([ "${swift_is_compatible}" = true ] && [ "${platform_is_compatible}" = true ] && echo true || echo false)" >> "${GITHUB_OUTPUT}"
