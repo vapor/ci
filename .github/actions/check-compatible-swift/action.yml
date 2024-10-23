@@ -37,9 +37,9 @@ runs:
           
           swift_is_compatible=$((( ${package_version} <= ${toolchain_version} )) && echo true || echo false)
 
-          if [ "$(uname)" = "Darwin" ]; then
+          if [[ "$(uname)" == "Darwin" ]]; then
             platform_version=$(parse_version $(swift package dump-package | jq -r '.platforms[] | select(.platformName == "macos") | .version'))
-            if [ "${platform_version}" = "null" ] || [ -z "${platform_version}" ]; then
+            if [[ "${platform_version}" == "null" || -z "${platform_version}" ]]; then
               platform_is_compatible=true
             else
               current_platform=$(parse_version $(sw_vers -productVersion))
@@ -49,4 +49,4 @@ runs:
             platform_is_compatible=true
           fi
 
-          echo "ok=$([ "${swift_is_compatible}" = true ] && [ "${platform_is_compatible}" = true ] && echo true || echo false)" >> "${GITHUB_OUTPUT}"
+          echo "ok=$([[ "${swift_is_compatible}" == true && "${platform_is_compatible}" == true ]] && echo true || echo false)" >> "${GITHUB_OUTPUT}"
