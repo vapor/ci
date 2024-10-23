@@ -188,7 +188,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Check Swift compatibility
         id: swift-check
-        uses: vapor/ci/.github/actions/check-compatible-swift@main
+        uses: mahdibm/ci/.github/actions/check-compatible-swift@patch-6
         with:
           package_root: ${{ inputs.package_root }}
       - name: Run unit tests
