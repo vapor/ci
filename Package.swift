@@ -15,7 +15,7 @@ let package = Package(
         .library(name: "SampleTestablePackageBenchmark", targets: ["SampleTestablePackageBenchmark"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-log.git", from: "1.5.0"),
+        .package(url: "https://github.com/apple/swift-log.git", from: "1.5.0")
     ],
     targets: [
         .executableTarget(

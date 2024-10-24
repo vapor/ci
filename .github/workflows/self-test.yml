@@ -15,8 +15,8 @@ on:
       warnings_as_errors:
         type: boolean
         required: false
-        default: false
-        description: "Set to 'true' to treat warnings as errors. Defaults to 'false'."
+        default: true
+        description: "Set to 'true' to treat warnings as errors. Defaults to 'true'."
       with_api_check:
         type: boolean
         required: false
@@ -30,8 +30,24 @@ on:
       with_linting: 
         type: boolean
         required: false
-        default: false
-        description: "Set to 'true' to run swift-format's lint process. Defaults to 'false'."
+        default: true
+        description: "Set to 'true' to run swift-format's lint process. Defaults to 'true'."
+      with_windows:
+        type: boolean
+        required: false
+        default: true
+        description: "Set to 'true' to run tests on Windows. Defaults to 'true'."
+      with_musl:
+        type: boolean
+        required: false
+        default: true
+        description: "Set to 'true' to build with the Static Linux SDK to test MUSL compatibility. Defaults to 'true'."
+      ios_scheme_name:
+        type: string
+        required: false
+        default: 'sample-testable-package-Package'
+        description: "Set to the scheme name in Xcode to run tests on iOS. Defaults to 'sample-testable-package', use '' to not run any tests."
+  pull_request: { branches: [ main ] }
   push: { branches: [ main ] }
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -43,7 +59,10 @@ jobs:
     with:
       with_coverage: ${{ inputs.with_coverage || false }}
       with_tsan: ${{ inputs.with_tsan || false }}
-      with_api_check: ${{ inputs.with_api_check || false }}
+      with_api_check: ${{ inputs.with_api_check || true }}
       with_gh_codeql: ${{ inputs.with_gh_codeql || true }}
-      warnings_as_errors: ${{ inputs.warnings_as_errors || false }}
-      with_linting: ${{ inputs.with_linting || false }}
+      warnings_as_errors: ${{ inputs.warnings_as_errors || true }}
+      with_linting: ${{ inputs.with_linting || true }}
+      with_windows: ${{ inputs.with_windows || true }}
+      with_musl: ${{ inputs.with_musl || true }}
+      ios_scheme_name: ${{ inputs.ios_scheme_name || 'sample-testable-package-Package' }}
