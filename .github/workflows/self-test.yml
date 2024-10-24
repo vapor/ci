@@ -45,7 +45,7 @@ on:
       ios_scheme_name:
         type: string
         required: false
-        default: 'sample-testable-package'
+        default: 'sample-testable-package-Package'
         description: "Set to the scheme name in Xcode to run tests on iOS. Defaults to 'sample-testable-package', use '' to not run any tests."
   pull_request: { branches: [ main ] }
   push: { branches: [ main ] }
@@ -65,4 +65,4 @@ jobs:
       with_linting: ${{ inputs.with_linting || true }}
       with_windows: ${{ inputs.with_windows || true }}
       with_musl: ${{ inputs.with_musl || true }}
-      ios_scheme_name: ${{ inputs.ios_scheme_name || 'sample-testable-package' }}
+      ios_scheme_name: ${{ inputs.ios_scheme_name || 'sample-testable-package-Package' }}
