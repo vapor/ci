@@ -1,6 +1,6 @@
-import SampleTestablePackageBenchmark
-import SampleTestablePackage
 import Logging
+import SampleTestablePackage
+import SampleTestablePackageBenchmark
 
 @main
 struct Executable {
