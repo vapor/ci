@@ -7,6 +7,7 @@ on:
         required: false
         default: true
         description: "Set to 'true' to run CodeQL checks. Defaults to 'true'."
+  pull_request: { branches: [ main ] }
   push: { branches: [ main ] }
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
