@@ -38,7 +38,7 @@ runs:
           swift_is_compatible=$((( ${package_version} <= ${toolchain_version} )) && echo true || echo false)
 
           if [[ "$(uname)" == "Darwin" ]]; then
-            raw_platfrom_version=$((swift package dump-package | echo '') | jq -r '.platforms[] | select(.platformName == "macos") | .version')
+            raw_platfrom_version=$((swift package dump-package || echo '') | jq -r '.platforms[] | select(.platformName == "macos") | .version')
             if [[ "${raw_platfrom_version}" == "null" || -z "${raw_platfrom_version}" ]]; then
               platform_is_compatible=true
             else
