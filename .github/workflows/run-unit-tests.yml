@@ -16,7 +16,7 @@ on:
        type: boolean
        required: false
        default: true
-       description: "Enable compilation for testin and @testable imports"
+       description: "Enable compilation for testing and @testable imports"
       with_coverage:
         type: boolean
         required: false
