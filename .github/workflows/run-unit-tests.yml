@@ -47,7 +47,7 @@ on:
         required: false
         default: true
         description: "Set to 'true' to submit a dependency graph to Github. Defaults to 'true'."
-      with_linting: 
+      with_linting:
         type: boolean
         required: false
         default: false
@@ -111,7 +111,7 @@ jobs:
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
           swift package ${PACKAGE_ROOT} diagnose-api-breaking-changes origin/main ${EXTRA_FLAGS}
-  
+
 #   gh-codeql:
 #     if: ${{ inputs.with_gh_codeql && !(github.event.pull_request.draft || false) }}
 #     runs-on: ubuntu-latest
@@ -132,17 +132,17 @@ jobs:
 #         run: 'swift build ${PACKAGE_ROOT} ${EXTRA_FLAGS}'
 #       - name: Run CodeQL analyze
 #         uses: github/codeql-action/analyze@v3
-  
+
   linux-unit:
     if: ${{ !(github.event.pull_request.draft || false) }}
     strategy:
       fail-fast: false
       matrix:
         swift-config:
-          - '{ image: "swift:5.9-jammy", "build-mode": "debug" }'
-          - '{ image: "swift:5.10-noble", "build-mode": "debug" }'
-          - '{ image: "swift:6.0-noble", "build-mode": "debug" }'
-          - '{ image: "swift:6.0-noble", "build-mode": "release" }'
+          - { image: "swift:5.9-jammy", "build-mode": "debug" }
+          - { image: "swift:5.10-noble", "build-mode": "debug" }
+          - { image: "swift:6.0-noble", "build-mode": "debug" }
+          - { image: "swift:6.0-noble", "build-mode": "release" }
           # - swiftlang/swift:nightly-main-jammy
     runs-on: ubuntu-latest
     container: ${{ matrix.swift-config.image }}
@@ -266,7 +266,7 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v4
-      - name: Read config file 
+      - name: Read config file
         # if .swift-format is not provided in the repo, use the default config file from CI
         run: |
           if [ ! -f .swift-format ]; then
