@@ -2,6 +2,16 @@ name: Self-test the reusable workflow
 on:
   workflow_dispatch:
     inputs:
+      with_testing:
+        type: boolean
+        required: false
+        default: true
+        description: "Set to 'true' to enable compilation for testing and @testable imports. Defaults to 'true'."
+      with_release_mode_testing:
+        type: boolean
+        required: false
+        default: true
+        description: "Set to 'true' to enable testing in release mode as well. Defaults to 'false'."
       with_coverage:
         type: boolean
         required: false
@@ -27,7 +37,7 @@ on:
         required: false
         default: true
         description: "Set to 'true' to run CodeQL checks. Defaults to 'true'."
-      with_linting: 
+      with_linting:
         type: boolean
         required: false
         default: true
@@ -57,6 +67,8 @@ jobs:
   call-workflow:
     uses: ./.github/workflows/run-unit-tests.yml
     with:
+      with_testing: ${{ inputs.with_testing || true }}
+      with_release_mode_testing: ${{ inputs.with_release_mode_testing || true }}
       with_coverage: ${{ inputs.with_coverage || false }}
       with_tsan: ${{ inputs.with_tsan || false }}
       with_api_check: ${{ inputs.with_api_check || true }}
