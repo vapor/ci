@@ -12,6 +12,11 @@ on:
         required: false
         default: ''
         description: "Apply a --filter to the tests that will be run."
+      with_testing:
+       type: boolean
+       required: false
+       default: true
+       description: "Enable compilation for testin and @testable imports"
       with_coverage:
         type: boolean
         required: false
@@ -81,6 +86,7 @@ on:
       CODECOV_TOKEN:
         required: false
 env:
+  WITH_TESTING: ${{ inputs.with_testing && '-Xswiftc -enable-testing' || '' }}
   PACKAGE_ROOT: ${{ inputs.package_root != '' && format('--package-path={0}', inputs.package_root) || '' }}
   EXTRA_FLAGS:  ${{ inputs.extra_flags }}
   EXTRA_MUSL_FLAGS: ${{ inputs.extra_musl_flags }}
@@ -132,13 +138,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        swift-image:
-          - swift:5.9-jammy
-          - swift:5.10-noble
-          - swift:6.0-noble
+        swift-config:
+          - '{ image: "swift:5.9-jammy", "build-mode": "debug" }'
+          - '{ image: "swift:5.10-noble", "build-mode": "debug" }'
+          - '{ image: "swift:6.0-noble", "build-mode": "debug" }'
+          - '{ image: "swift:6.0-noble", "build-mode": "release" }'
           # - swiftlang/swift:nightly-main-jammy
     runs-on: ubuntu-latest
-    container: ${{ matrix.swift-image }}
+    container: ${{ matrix.swift-config.image }}
     timeout-minutes: 60
     steps:
       - name: Check out code
@@ -153,6 +160,8 @@ jobs:
         run: |
           SWIFT_DETERMINISTIC_HASHING=1 \
           swift test \
+            -c ${{ matrix.swift-config.build-mode }} \
+            ${WITH_TESTING} \
             ${PACKAGE_ROOT} \
             ${WITH_TSAN} \
             ${WARNINGS_AS_ERRORS} \
@@ -165,7 +174,7 @@ jobs:
         with:
           codecov_token:    ${{ secrets.CODECOV_TOKEN || '' }}
           package_path:     ${{ inputs.package_root }}
-          build_parameters: ${{ inputs.extra_flags }}
+          build_parameters: -c ${{ matrix.swift-config.build-mode }} ${{ inputs.extra_flags }}
 
   macos-unit:
     if: ${{ !(github.event.pull_request.draft || false) }}
