@@ -13,10 +13,15 @@ on:
         default: ''
         description: "Apply a --filter to the tests that will be run."
       with_testing:
-       type: boolean
-       required: false
-       default: true
-       description: "Enable compilation for testing and @testable imports"
+        type: boolean
+        required: false
+        default: true
+        description: "Set to 'true' to enable compilation for testing and @testable imports. Defaults to 'true'."
+      with_release_mode_testing:
+        type: boolean
+        required: false
+        default: false
+        description: "Set to 'true' to enable testing in release mode as well. Defaults to 'false'."
       with_coverage:
         type: boolean
         required: false
@@ -149,14 +154,16 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Check out code
+        if: ${{ matrix.swift-config.build-mode == 'debug' || !inputs.with_release_mode_testing }}
         uses: actions/checkout@v4
       - name: Check Swift compatibility
         id: swift-check
+        if: ${{ matrix.swift-config.build-mode == 'debug' || !inputs.with_release_mode_testing }}
         uses: vapor/ci/.github/actions/check-compatible-swift@main
         with:
           package_root: ${{ inputs.package_root }}
       - name: Run unit tests
-        if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
+        if: ${{ steps.swift-check.outputs.swift-compatible == 'true' && (matrix.swift-config.build-mode == 'debug' || !inputs.with_release_mode_testing) }}
         run: |
           SWIFT_DETERMINISTIC_HASHING=1 \
           swift test \
@@ -169,7 +176,7 @@ jobs:
             ${TEST_FILTER} \
             ${EXTRA_FLAGS}
       - name: Upload coverage data
-        if: ${{ (steps.swift-check.outputs.swift-compatible == 'true') && inputs.with_coverage }}
+        if: ${{ inputs.with_coverage && (steps.swift-check.outputs.swift-compatible == 'true') && (matrix.swift-config.build-mode == 'debug' || !inputs.with_release_mode_testing) }}
         uses: vapor/swift-codecov-action@v0.3
         with:
           codecov_token:    ${{ secrets.CODECOV_TOKEN || '' }}
