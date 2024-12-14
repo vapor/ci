@@ -243,8 +243,10 @@ jobs:
     if: ${{ inputs.with_linting }}
     runs-on: ubuntu-latest
     container: swift:6.0-noble
-    timeout-minutes: 30
+    timeout-minutes: 5
     steps:
+      - name: Configure git
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Check out code
         uses: actions/checkout@v4
       - name: Read config file
@@ -256,7 +258,9 @@ jobs:
             curl -O https://raw.githubusercontent.com/vapor/contributing/refs/heads/main/.swift-format
           fi
       - name: Lint
-        run: swift-format lint --recursive --strict --parallel .
+        run: |
+          apt -q update && apt -yq install curl
+          curl -s https://raw.githubusercontent.com/swiftlang/github-workflows/refs/heads/main/.github/workflows/scripts/check-swift-format.sh | bash
 
   musl:
     if: ${{ !(github.event.pull_request.draft || false) && inputs.with_musl }}
