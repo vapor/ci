@@ -258,9 +258,7 @@ jobs:
             curl -O https://raw.githubusercontent.com/vapor/contributing/refs/heads/main/.swift-format
           fi
       - name: Lint
-        run: |
-          apt -q update && apt -yq install curl
-          curl -s https://raw.githubusercontent.com/swiftlang/github-workflows/refs/heads/main/.github/workflows/scripts/check-swift-format.sh | bash
+        run: swift-format lint --recursive --strict --parallel .
 
   musl:
     if: ${{ !(github.event.pull_request.draft || false) && inputs.with_musl }}
