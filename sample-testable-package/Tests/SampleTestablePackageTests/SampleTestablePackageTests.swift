@@ -1,4 +1,5 @@
 import XCTest
+
 @testable import SampleTestablePackage
 
 final class SampleTestablePackageTests: XCTestCase {
