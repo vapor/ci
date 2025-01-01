@@ -141,7 +141,7 @@ jobs:
         uses: vapor/ci/.github/actions/check-compatible-swift@main
         with:
           package_root: ${{ inputs.package_root }}
-      # actions/cache will detect zstd and will become 5x+ times faster.
+      # actions/cache will detect zstd and will become much faster.
       - name: Install zstd
         run: |
           apt-get update -y
