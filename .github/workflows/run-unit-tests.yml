@@ -143,7 +143,7 @@ jobs:
           package_root: ${{ inputs.package_root }}
       # actions/cache will detect zstd and will become much faster.
       - name: Install zstd
-        if: ${{ steps.swift-check.outputs.swift-compatible == 'true' && (matrix.swift-config.build-mode == 'debug' || inputs.with_release_mode_testing) }}
+        if: ${{ inputs.with_experimental_caching && (steps.swift-check.outputs.swift-compatible == 'true') && (matrix.swift-config.build-mode == 'debug' || inputs.with_release_mode_testing) }}
         run: |
           apt-get update -y
           apt-get install -y zstd
