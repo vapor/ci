@@ -4,7 +4,7 @@ runners:
   2cpu-4ram:
     cpu: 2
     ram: 4
-    family: ["c7g", "c7gn"]
+    family: ["c8g", "c7g"]
     hdd: 40
     image: ubuntu24-full-arm64
     spot: lowest-price
