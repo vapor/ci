@@ -4,7 +4,7 @@ runners:
   2cpu-4or8ram:
     cpu: 2
     ram: [4, 8]
-    family: ["c8g", "c7g", "m8g", "m7g"]
+    family: ["c8g", "m8g"]
     hdd: 40
     image: ubuntu24-full-arm64
     extras: s3-cache
