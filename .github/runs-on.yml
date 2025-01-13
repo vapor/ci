@@ -10,3 +10,12 @@ runners:
     extras: s3-cache
     spot: lowest-price
     ssh: false
+  2cpu-8ram:
+    cpu: 2
+    ram: 8
+    family: ["m8g"]
+    hdd: 40
+    image: ubuntu24-full-arm64
+    extras: s3-cache
+    spot: lowest-price
+    ssh: false
