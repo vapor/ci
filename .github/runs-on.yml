@@ -12,8 +12,8 @@ runners:
     ssh: false
   2cpu-8ram:
     cpu: 2
-    ram: 8
-    family: ["m8g"]
+    ram: 16 # temporarily use 16 GiBs of ram becasue mg8 machine is not available in our current RunsOn AWS region.
+    family: ["r8g"]
     hdd: 40
     image: ubuntu24-full-arm64
     extras: s3-cache
