@@ -142,5 +142,5 @@ jobs:
       - name: Exit with correct status
         run: |
           EXIT_CODE='${{ steps.comparison.outputs.exit-status }}'
-          echo "Previous exit code was: $EXIT_CODE"
+          echo "Exit code is: $EXIT_CODE"
           exit $EXIT_CODE
