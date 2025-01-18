@@ -90,58 +90,57 @@ jobs:
           key: "swiftpm-benchmark-build-${{ runner.os }}-${{ github.event.pull_request.base.sha || github.event.after }}"
 
       - name: Construct comment
-        id: pr-comment
         run: |
           EXIT_CODE='${{ steps.comparison.outputs.exit-status }}'
 
-          echo 'content<<EOF' >> "${GITHUB_OUTPUT}"
+          echo 'content<<EOF' >> comment.md
 
-          echo '## [Benchmark](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) Report' >> "${GITHUB_OUTPUT}"
+          echo '## [Benchmark](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) Report' >> comment.md
 
           case "${EXIT_CODE}" in
               0)
-                  echo '**✅ Pull request has no significant performance differences ✅**' >> "${GITHUB_OUTPUT}"
+                  echo '**✅ Pull request has no significant performance differences ✅**' >> comment.md
                   ;;
               1)
-                  echo '**❌ Pull request has significant performance differences 📊**' >> "${GITHUB_OUTPUT}"
+                  echo '**❌ Pull request has significant performance differences 📊**' >> comment.md
                   ;;
               2)
-                  echo '**❌ Pull request has significant performance regressions 📉**' >> "${GITHUB_OUTPUT}"
+                  echo '**❌ Pull request has significant performance regressions 📉**' >> comment.md
                   ;;
               4)
-                  echo '**❌ Pull request has significant performance improvements 📈**' >> "${GITHUB_OUTPUT}"
+                  echo '**❌ Pull request has significant performance improvements 📈**' >> comment.md
                   ;;
               *)
-                  echo '**❌ Benchmark comparison failed to complete properly with exit code $EXIT_CODE ❌**' >> "${GITHUB_OUTPUT}"
+                  echo '**❌ Benchmark comparison failed to complete properly with exit code $EXIT_CODE ❌**' >> comment.md
                   ;;
           esac
 
-          echo '<details>' >> "${GITHUB_OUTPUT}"
-          echo '  <summary> Click to expand comparison result </summary>' >> "${GITHUB_OUTPUT}"
-          echo '' >> "${GITHUB_OUTPUT}"
-          cat comparison.md >> "${GITHUB_OUTPUT}"
-          echo '' >> "${GITHUB_OUTPUT}"
-          echo '</details>' >> "${GITHUB_OUTPUT}"
+          echo '<details>' >> comment.md
+          echo '  <summary> Click to expand comparison result </summary>' >> comment.md
+          echo '' >> comment.md
+          cat comparison.md >> comment.md
+          echo '' >> comment.md
+          echo '</details>' >> comment.md
 
-          echo '' >> "${GITHUB_OUTPUT}"
+          echo '' >> comment.md
 
-          echo '<details>' >> "${GITHUB_OUTPUT}"
-          echo '  <summary> Click to expand benchmark result </summary>' >> "${GITHUB_OUTPUT}"
-          echo '' >> "${GITHUB_OUTPUT}"
-          cat benchmark.md >> "${GITHUB_OUTPUT}"
-          echo '' >> "${GITHUB_OUTPUT}"
-          echo '</details>' >> "${GITHUB_OUTPUT}"
+          echo '<details>' >> comment.md
+          echo '  <summary> Click to expand benchmark result </summary>' >> comment.md
+          echo '' >> comment.md
+          cat benchmark.md >> comment.md
+          echo '' >> comment.md
+          echo '</details>' >> comment.md
 
-          echo 'EOF' >> "${GITHUB_OUTPUT}"
+          echo 'EOF' >> comment.md
 
       - name: Output the comment as job summary
-        run: echo '${{ steps.pr-comment.outputs.content }}' >> "${GITHUB_STEP_SUMMARY}"
+        run: cat comment.md >> "${GITHUB_STEP_SUMMARY}"
 
       - name: Comment in PR
         if: startsWith(github.event_name, 'pull_request')
         uses: thollander/actions-comment-pull-request@v3
         with:
-          message: ${{ steps.pr-comment.outputs.content }}
+          file-path: comment.md
           comment-tag: benchmark-ci-comment
 
       - name: Exit with correct status
