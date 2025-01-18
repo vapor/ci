@@ -102,6 +102,8 @@ jobs:
       - name: Construct comment
         id: pr-comment
         run: |
+          cat summary.text
+
           EXIT_CODE='${{ steps.compare-benchmark.outputs.exit-status }}'
 
           echo 'content<<EOF' >> "${GITHUB_OUTPUT}"
