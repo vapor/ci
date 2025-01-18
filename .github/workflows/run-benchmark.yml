@@ -52,7 +52,6 @@ jobs:
             '${{ github.head_ref || github.ref_name }}'
 
       - name: Read benchmark result
-        id: read-benchmark
         run: |
           swift package -c release --disable-sandbox \
             --package-path Benchmarks \
@@ -60,20 +59,15 @@ jobs:
             '${{ github.head_ref || github.ref_name }}' \
             --no-progress \
             --format markdown \
-            >> result.text
-
-          # Read the result to the output of the step
-          echo 'result<<EOF' >> "${GITHUB_OUTPUT}"
-          cat result.text >> "${GITHUB_OUTPUT}"
-          echo 'EOF' >> "${GITHUB_OUTPUT}"
+            >> benchmark.md
 
       - name: Compare branch '${{ github.head_ref || github.ref_name }}' against thresholds
-        id: compare-benchmark
+        id: comparison
         run: |
           TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
           ENCODED_TIMESTAMP=$(date -u +"%Y-%m-%dT%H%%3A%M%%3A%SZ")
           TIMESTAMP_LINK="https://www.timeanddate.com/worldclock/fixedtime.html?iso=$ENCODED_TIMESTAMP"
-          echo "## Benchmark check running at [$TIMESTAMP]($TIMESTAMP_LINK)" >> summary.text
+          echo "## Benchmark check running at [$TIMESTAMP]($TIMESTAMP_LINK)" >> comparison.md
 
           # Disable 'set -e' to prevent the script from exiting on non-zero exit codes
           set +e
@@ -84,13 +78,9 @@ jobs:
             --path "$PWD/Benchmarks/Thresholds/" \
             --no-progress \
             --format markdown \
-            >> summary.text
+            >> comparison.md
           echo "exit-status=$?" >> "${GITHUB_OUTPUT}"
           set -e
-
-          echo 'summary<<EOF' >> "${GITHUB_OUTPUT}"
-          cat summary.text >> "${GITHUB_OUTPUT}"
-          echo 'EOF' >> "${GITHUB_OUTPUT}"
 
       - name: Cache .build
         if: steps.restore-cache.outputs.cache-hit != 'true'
@@ -102,9 +92,7 @@ jobs:
       - name: Construct comment
         id: pr-comment
         run: |
-          cat summary.text
-
-          EXIT_CODE='${{ steps.compare-benchmark.outputs.exit-status }}'
+          EXIT_CODE='${{ steps.comparison.outputs.exit-status }}'
 
           echo 'content<<EOF' >> "${GITHUB_OUTPUT}"
 
@@ -131,7 +119,7 @@ jobs:
           echo '<details>' >> "${GITHUB_OUTPUT}"
           echo '  <summary> Click to expand comparison result </summary>' >> "${GITHUB_OUTPUT}"
           echo '' >> "${GITHUB_OUTPUT}"
-          echo '${{ steps.compare-benchmark.outputs.summary }}' >> "${GITHUB_OUTPUT}"
+          cat comparison.md >> "${GITHUB_OUTPUT}"
           echo '' >> "${GITHUB_OUTPUT}"
           echo '</details>' >> "${GITHUB_OUTPUT}"
 
@@ -140,7 +128,7 @@ jobs:
           echo '<details>' >> "${GITHUB_OUTPUT}"
           echo '  <summary> Click to expand benchmark result </summary>' >> "${GITHUB_OUTPUT}"
           echo '' >> "${GITHUB_OUTPUT}"
-          echo '${{ steps.read-benchmark.outputs.result }}' >> "${GITHUB_OUTPUT}"
+          cat benchmark.md >> "${GITHUB_OUTPUT}"
           echo '' >> "${GITHUB_OUTPUT}"
           echo '</details>' >> "${GITHUB_OUTPUT}"
 
@@ -158,6 +146,6 @@ jobs:
 
       - name: Exit with correct status
         run: |
-          EXIT_CODE='${{ steps.compare-benchmark.outputs.exit-status }}'
+          EXIT_CODE='${{ steps.comparison.outputs.exit-status }}'
           echo "Previous exit code was: $EXIT_CODE"
           exit $EXIT_CODE
