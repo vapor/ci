@@ -91,11 +91,9 @@ jobs:
 
       - name: Construct comment
         run: |
-          EXIT_CODE='${{ steps.comparison.outputs.exit-status }}'
-
-          echo 'content<<EOF' >> comment.md
-
           echo '## [Benchmark](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) Report' >> comment.md
+
+          EXIT_CODE='${{ steps.comparison.outputs.exit-status }}'
 
           case "${EXIT_CODE}" in
               0)
@@ -130,8 +128,6 @@ jobs:
           cat benchmark.md >> comment.md
           echo '' >> comment.md
           echo '</details>' >> comment.md
-
-          echo 'EOF' >> comment.md
 
       - name: Output the comment as job summary
         run: cat comment.md >> "${GITHUB_STEP_SUMMARY}"
