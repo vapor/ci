@@ -29,13 +29,6 @@ jobs:
       - name: Configure git
         run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
 
-      - name: Get Penny token
-        id: get-penny-token
-        uses: actions/create-github-app-token@v1
-        with:
-          app-id: ${{ vars.PENNY_APP_ID }}
-          private-key: ${{ secrets.PENNY_APP_PRIVATE_KEY }}
-
       # jemalloc is a dependency of the Benchmarking package
       # actions/cache will detect zstd and will become much faster.
       - name: Install jemalloc, curl, jq and zstd
@@ -138,6 +131,13 @@ jobs:
 
       - name: Output the comment as job summary
         run: cat comment.md >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Get Penny token
+        id: get-penny-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.PENNY_APP_ID }}
+          private-key: ${{ secrets.PENNY_APP_PRIVATE_KEY }}
 
       - name: Comment in PR
         if: startsWith(github.event_name, 'pull_request')
