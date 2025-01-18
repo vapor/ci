@@ -140,7 +140,4 @@ jobs:
           comment-tag: benchmark-ci-comment
 
       - name: Exit with correct status
-        run: |
-          EXIT_CODE='${{ steps.comparison.outputs.exit-status }}'
-          echo "Exit code is: $EXIT_CODE"
-          exit $EXIT_CODE
+        run: exit ${{ steps.comparison.outputs.exit-status }}
