@@ -148,7 +148,8 @@ jobs:
           apt-get update -y
           apt-get install -y zstd
       - name: Restore .build
-        if: ${{ inputs.with_experimental_caching && (steps.swift-check.outputs.swift-compatible == 'true') && (matrix.swift-config.build-mode == 'debug' || inputs.with_release_mode_testing) }}
+        # If this step is restoring malformed data, use 'Enable debug logging' on a re-run to disable the step.
+        if: ${{ (runner.debug != '1') && inputs.with_experimental_caching && (steps.swift-check.outputs.swift-compatible == 'true') && (matrix.swift-config.build-mode == 'debug' || inputs.with_release_mode_testing) }}
         id: "restore-cache"
         uses: actions/cache/restore@v4
         with:
