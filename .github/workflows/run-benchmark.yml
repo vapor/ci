@@ -2,11 +2,11 @@ name: benchmark
 on:
   workflow_call:
     inputs:
-      ref:
+      sha:
         type: string
         required: false
-        default: "${{ github.ref }}"
-        description: "Runs the benchmarks of the specified PR against main thresholds"
+        default: ""
+        description: "The commit SHA to run the benchmarks against. Will use current ref if not provided."
 
 jobs:
   benchmark-vs-thresholds:
@@ -27,11 +27,26 @@ jobs:
       - name: Configure RunsOn
         uses: runs-on/action@v1
 
+      - name: Find commit info
+        id: commit-info
+        run: |
+          apt update -q && apt install -yq curl jq
+
+          PR_NUMBER="$(curl "https://api.github.com/repos/vapor/multipart-kit/commits/${{ inputs.sha }}/pulls" | jq -r '.[0].number' || true)"
+          echo "pr_number=${PR_NUMBER}" >> "${GITHUB_OUTPUT}"
+
+          if [[ -n '${{ inputs.sha }}' ]]; then
+            FULL_SHA="$(curl "https://api.github.com/repos/vapor/multipart-kit/commits/${{ inputs.sha }}" | jq -r '.sha')"
+            echo "ref=${FULL_SHA}" >> "${GITHUB_OUTPUT}"
+          else
+            echo "ref=${{ github.ref }}" >> "${GITHUB_OUTPUT}"
+          fi
+
       - name: Check out code
         uses: actions/checkout@v4
         with:
-          ref: "${{ inputs.ref }}"
-          fetch-depth: 10
+          ref: "${{ steps.commit-info.outputs.ref }}"
+          fetch-depth: 0
 
       - name: Configure git
         run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
@@ -140,15 +155,8 @@ jobs:
       - name: Output the comment as job summary
         run: cat comment.md >> "${GITHUB_STEP_SUMMARY}"
 
-      - name: Find related PR
-        id: find-pr
-        run: |
-          apt update -q && apt install -yq curl jq
-          NUMBER="$(curl "https://api.github.com/repos/vapor/multipart-kit/commits/${{ inputs.ref }}/pulls" | jq -q '.[0].number' || true)"
-          echo "number=${NUMBER}" >> "${GITHUB_OUTPUT}"
-
       - name: Get Penny token
-        if: steps.find-pr.outputs.number != ''
+        if: steps.commit-info.outputs.pr_number != ''
         id: get-penny-token
         uses: actions/create-github-app-token@v1
         with:
@@ -156,10 +164,10 @@ jobs:
           private-key: ${{ secrets.PENNY_APP_PRIVATE_KEY }}
 
       - name: Comment in PR
-        if: steps.find-pr.outputs.number != ''
+        if: steps.commit-info.outputs.pr_number != ''
         uses: thollander/actions-comment-pull-request@v3
         with:
-          pr-number: ${{ steps.find-pr.outputs.number }}
+          pr-number: ${{ steps.commit-info.outputs.pr_number }}
           file-path: comment.md
           comment-tag: benchmark-ci-comment
           github-token: ${{ steps.get-penny-token.outputs.token }}
