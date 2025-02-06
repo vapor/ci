@@ -1,6 +1,12 @@
 name: benchmark
 on:
   workflow_call:
+    inputs:
+      sha:
+        type: string
+        required: false
+        default: ""
+        description: "The commit SHA to run the benchmarks against. Will use current ref if not provided."
 
 jobs:
   benchmark-vs-thresholds:
@@ -21,9 +27,25 @@ jobs:
       - name: Configure RunsOn
         uses: runs-on/action@v1
 
+      - name: Find commit info
+        id: commit-info
+        run: |
+          apt update -q && apt install -yq curl jq
+
+          PR_NUMBER="$(curl "https://api.github.com/repos/vapor/multipart-kit/commits/${{ inputs.sha }}/pulls" | jq -r '.[0].number' || true)"
+          echo "pr_number=${PR_NUMBER}" >> "${GITHUB_OUTPUT}"
+
+          if [[ -n '${{ inputs.sha }}' ]]; then
+            FULL_SHA="$(curl "https://api.github.com/repos/vapor/multipart-kit/commits/${{ inputs.sha }}" | jq -r '.sha')"
+            echo "ref=${FULL_SHA}" >> "${GITHUB_OUTPUT}"
+          else
+            echo "ref=${{ github.ref }}" >> "${GITHUB_OUTPUT}"
+          fi
+
       - name: Check out code
         uses: actions/checkout@v4
         with:
+          ref: "${{ steps.commit-info.outputs.ref }}"
           fetch-depth: 0
 
       - name: Configure git
@@ -42,7 +64,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: Benchmarks/.build
-          key: "swiftpm-benchmark-build-${{ runner.os }}-${{ github.event.pull_request.base.sha || github.event.after }}"
+          key: "swiftpm-benchmark-build-${{ runner.os }}-${{ github.event.after }}"
           restore-keys: "swiftpm-benchmark-build-${{ runner.os }}-"
 
       - name: Run benchmarks for branch '${{ github.head_ref || github.ref_name }}'
@@ -88,7 +110,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: Benchmarks/.build
-          key: "swiftpm-benchmark-build-${{ runner.os }}-${{ github.event.pull_request.base.sha || github.event.after }}"
+          key: "swiftpm-benchmark-build-${{ runner.os }}-${{ github.event.after }}"
 
       - name: Construct comment
         run: |
@@ -133,12 +155,47 @@ jobs:
       - name: Output the comment as job summary
         run: cat comment.md >> "${GITHUB_STEP_SUMMARY}"
 
+      - name: Get Penny token
+        if: steps.commit-info.outputs.pr_number != ''
+        id: get-penny-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.PENNY_APP_ID }}
+          private-key: ${{ secrets.PENNY_APP_PRIVATE_KEY }}
+
       - name: Comment in PR
-        if: startsWith(github.event_name, 'pull_request')
+        if: steps.commit-info.outputs.pr_number != ''
         uses: thollander/actions-comment-pull-request@v3
         with:
+          pr-number: ${{ steps.commit-info.outputs.pr_number }}
           file-path: comment.md
           comment-tag: benchmark-ci-comment
+          github-token: ${{ steps.get-penny-token.outputs.token }}
+
+      - name: Create commit status
+        if: steps.commit-info.outputs.pr_number != ''
+        run: |
+          if [[ "${{ steps.comparison.outputs.exit-status }}" == '0' ]]; then
+            STATE='success'
+          else
+            STATE='failure'
+          fi
+
+          BODY="$(
+            jq -n \
+              --arg state "${STATE}" \
+              --arg url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+              --arg context "benchmark / benchmark-vs-thresholds" \
+              '{state: $state, target_url: $url, context: $context}'
+          )"
+
+          curl -L \
+            -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ steps.get-penny-token.outputs.token }}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${{ github.repository }}/statuses/${{ steps.commit-info.outputs.ref }}" \
+            -d "${BODY}"
 
       - name: Exit with correct status
         run: exit ${{ steps.comparison.outputs.exit-status }}
