@@ -172,5 +172,22 @@ jobs:
           comment-tag: benchmark-ci-comment
           github-token: ${{ steps.get-penny-token.outputs.token }}
 
+      - name: Create commit status
+        if: steps.commit-info.outputs.pr_number != ''
+        run: |
+          if [[ "${{ steps.comparison.outputs.exit-status }}" == '0' ]]; then
+            STATE='success'
+          else
+            STATE='failure'
+          fi
+
+          curl -L \
+            -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ steps.get-penny-token.outputs.token }}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/${{ github.repository }}/statuses/${{ steps.commit-info.outputs.ref }} \
+          -d '{"state":"${STATE}","target_url":"https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}","context":"benchmark / benchmark-vs-thresholds"}'
+
       - name: Exit with correct status
         run: exit ${{ steps.comparison.outputs.exit-status }}
