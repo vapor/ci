@@ -58,6 +58,7 @@ jobs:
     uses: ./.github/workflows/run-unit-tests.yml
     with:
       with_release_mode_testing: ${{ inputs.with_release_mode_testing || true }}
+      with_experimental_caching: true
       with_coverage: ${{ inputs.with_coverage || false }}
       with_tsan: ${{ inputs.with_tsan || false }}
       with_api_check: ${{ inputs.with_api_check || true }}
