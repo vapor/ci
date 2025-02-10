@@ -124,7 +124,7 @@ jobs:
       matrix:
         swift-config:
           - { image: "swift:5.9-jammy", "build-mode": "debug" }
-          - { image: "swift:5.10-noble", "build-mode": "debug" }
+          - { image: "swift:5.10-jammy", "build-mode": "debug" }
           - { image: "swift:6.0-noble", "build-mode": "debug" }
           - { image: "swift:6.0-noble", "build-mode": "release" }
           # - swiftlang/swift:nightly-main-jammy
