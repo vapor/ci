@@ -51,20 +51,20 @@ jobs:
                 jq 'select(.items[].pull_request.url | contains("/${{ github.repository }}/")) | .items[-1]'
             )"
 
-            PR_NUMBER="$(echo "${PR}" | jq -r '.number')"
             PR_TITLE="$(echo "${PR}" | jq -r '.title')"
+            PR_NUMBER="$(echo "${PR}" | jq -r '.number')"
 
             echo "ref=${FULL_SHA}" >> "${GITHUB_OUTPUT}"
             echo "sha=${FULL_SHA}" >> "${GITHUB_OUTPUT}"
+            echo "title=${PR_TITLE}" >> "${GITHUB_OUTPUT}"
             echo "pr_number=${PR_NUMBER}" >> "${GITHUB_OUTPUT}"
-            echo "pr_title=${PR_TITLE}" >> "${GITHUB_OUTPUT}"
             SHORT_NAME="$(echo $FULL_SHA | cut -c 1-7)"
             FILES_LINK="https://github.com/${{ github.repository }}/pull/${PR_NUMBER}/commits/${FULL_SHA}"
           else
             echo 'ref=${{ github.ref }}' >> "${GITHUB_OUTPUT}"
             echo "sha=${GITHUB_SHA}" >> "${GITHUB_OUTPUT}"
+            echo 'title=${{ github.ref_name }}' >> "${GITHUB_OUTPUT}"
             echo 'pr_number=' >> "${GITHUB_OUTPUT}"
-            echo 'pr_title=' >> "${GITHUB_OUTPUT}"
             SHORT_NAME='${{ github.head_ref }}'
             FILES_LINK="https://github.com/${{ github.repository }}/commit/${GITHUB_SHA}"
           fi
@@ -112,24 +112,24 @@ jobs:
           key: "swiftpm-benchmark-build-${{ runner.os }}-${{ steps.commit-info.outputs.sha }}"
           restore-keys: "swiftpm-benchmark-build-${{ runner.os }}-"
 
-      - name: Run benchmarks for '${{ steps.commit-info.outputs.pr_title }}'
+      - name: Run benchmarks for '${{ steps.commit-info.outputs.title }}'
         run: |
           swift package -c release --disable-sandbox \
             --package-path Benchmarks \
             benchmark baseline update \
-            '${{ steps.commit-info.outputs.pr_title }}'
+            '${{ steps.commit-info.outputs.title }}'
 
       - name: Read benchmark result
         run: |
           swift package -c release --disable-sandbox \
             --package-path Benchmarks \
             benchmark baseline read \
-            '${{ steps.commit-info.outputs.pr_title }}' \
+            '${{ steps.commit-info.outputs.title }}' \
             --no-progress \
             --format markdown \
             >> benchmark.md
 
-      - name: Compare '${{ steps.commit-info.outputs.pr_title }}' against thresholds
+      - name: Compare '${{ steps.commit-info.outputs.title }}' against thresholds
         id: comparison
         run: |
           TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
@@ -142,7 +142,7 @@ jobs:
           swift package -c release --disable-sandbox \
             --package-path Benchmarks \
             benchmark thresholds check \
-            '${{ steps.commit-info.outputs.pr_title }}' \
+            '${{ steps.commit-info.outputs.title }}' \
             --path "$PWD/Benchmarks/Thresholds/" \
             --no-progress \
             --format markdown \
@@ -210,7 +210,9 @@ jobs:
       - name: Output the comment as job summary
         run: |
           cat comment.md >> "${GITHUB_STEP_SUMMARY}"
-          echo 'Commented at ${{ steps.pr-comment.outputs.html-url }}' >> "${GITHUB_STEP_SUMMARY}"
+          if [[ -n '${{ steps.commit-info.outputs.pr_number }}' ]]; then
+            echo 'Commented at ${{ steps.pr-comment.outputs.html-url }}' >> "${GITHUB_STEP_SUMMARY}"
+          fi
 
       - name: Update commit status
         if: steps.commit-info.outputs.pr_number != ''
@@ -225,9 +227,9 @@ jobs:
           )"
           curl -L \
             -X POST \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer ${{ steps.create-penny-token.outputs.token }}" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'Authorization: Bearer ${{ steps.create-penny-token.outputs.token }}' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
             'https://api.github.com/repos/${{ github.repository }}/statuses/${{ steps.commit-info.outputs.sha }}' \
             -d "${BODY}"
 
