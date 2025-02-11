@@ -42,6 +42,11 @@ on:
         required: false
         default: true
         description: "Set to 'true' to build with the Static Linux SDK to test MUSL compatibility. Defaults to 'true'."
+      with_android:
+        type: boolean
+        required: false
+        default: true
+        description: "Set to 'true' to run tests on Android. Defaults to 'true'."
       ios_scheme_name:
         type: string
         required: false
@@ -65,4 +70,5 @@ jobs:
       with_linting: ${{ inputs.with_linting || true }}
       with_windows: ${{ inputs.with_windows || true }}
       with_musl: ${{ inputs.with_musl || true }}
+      with_android: ${{ inputs.with_android || true }}
       ios_scheme_name: ${{ inputs.ios_scheme_name || 'sample-testable-package-Package' }}
