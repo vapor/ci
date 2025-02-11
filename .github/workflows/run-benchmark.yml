@@ -70,7 +70,7 @@ jobs:
             echo "sha=${GITHUB_SHA}" >> "${GITHUB_OUTPUT}"
             echo 'title=${{ github.ref_name }}' >> "${GITHUB_OUTPUT}"
             echo 'pr_number=' >> "${GITHUB_OUTPUT}"
-            SHORT_NAME='${{ github.head_ref }}'
+            SHORT_NAME='${{ github.ref_name }}'
             FILES_LINK="https://github.com/${{ github.repository }}/commit/${GITHUB_SHA}"
           fi
 
