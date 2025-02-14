@@ -51,7 +51,8 @@ jobs:
                 jq 'select(.items[].pull_request.url | contains("/${{ github.repository }}/")) | .items[-1]'
             )"
 
-            PR_TITLE="$(echo "${PR}" | jq -r '.title')"
+            # PR title, removing all occurrences of `'`
+            PR_TITLE="$(echo "${PR}" | jq -r '.title' | tr -d "'")"
             PR_NUMBER="$(echo "${PR}" | jq -r '.number')"
 
             if [[ -z "${PR_NUMBER}" ]]; then
