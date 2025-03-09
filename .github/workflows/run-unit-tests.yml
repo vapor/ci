@@ -231,7 +231,7 @@ jobs:
         shell: cmd
         run: |
           call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64 10.0.22621.0
-          swift test ${{ env.PACKAGE_ROOT }} ${{ env.WITH_TSAN }} ${{ env.TEST_FILTER }} ${{ env.EXTRA_FLAGS }}
+          swift test ${{ env.PACKAGE_ROOT }} ${{ env.WITH_TSAN }} ${{ env.TEST_FILTER }} ${{ env.EXTRA_FLAGS }} -Xswiftc -windows-sdk-version -Xswiftc 10.0.22621.0 -Xbuild-tools-swiftc -windows-sdk-version -Xbuild-tools-swiftc 10.0.22621.0
 
   ios-unit:
     if: ${{ !(github.event.pull_request.draft || false) && inputs.ios_scheme_name != '' }}
