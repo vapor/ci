@@ -225,6 +225,9 @@ jobs:
         with:
           branch: ${{ matrix.swift-branch }}
           tag: ${{ matrix.swift-tag }}
+      - name: Set Windows SDK version
+        run: |
+          C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vsvarsall.bat 10.0.22621.0
       - name: Check out code
         uses: actions/checkout@v4
       - name: Run unit tests
