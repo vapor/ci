@@ -128,11 +128,10 @@ jobs:
       fail-fast: false
       matrix:
         swift-config:
-          - { image: "swift:5.9-jammy", "build-mode": "debug" }
           - { image: "swift:5.10-noble", "build-mode": "debug" }
           - { image: "swift:6.0-noble", "build-mode": "debug" }
-          - { image: "swift:6.0-noble", "build-mode": "release" }
-          # - swiftlang/swift:nightly-main-jammy
+          - { image: "swift:6.1-noble", "build-mode": "debug" }
+          - { image: "swift:6.1-noble", "build-mode": "release" }
     runs-on: ubuntu-latest
     container: ${{ matrix.swift-config.image }}
     timeout-minutes: 60
@@ -239,13 +238,21 @@ jobs:
           # - 5.9
           # - 5.10
           - 6.0
+          - 6.1
         include:
           # - { swift-version: 5.9, swift-branch: swift-5.9.2-release, swift-tag: 5.9.2-RELEASE }
           # - { swift-version: 5.10, swift-branch: swift-5.10.1-release, swift-tag: 5.10.1-RELEASE }
-          - { swift-version: 6.0, swift-branch: swift-6.0.1-release, swift-tag: 6.0.1-RELEASE }
+          - { swift-version: 6.0, swift-branch: swift-6.0.3-release, swift-tag: 6.0.3-RELEASE }
+          - { swift-version: 6.1, swift-branch: swift-6.1-release, swift-tag: 6.1-RELEASE }
     runs-on: windows-latest
     timeout-minutes: 60
     steps:
+      # https://github.com/compnerd/cassowary/pull/27
+      - name: Configure dev environment
+        uses: compnerd/gha-setup-vsdevenv@main
+        with:
+          toolset_version: 14.29
+          winsdk: 10.0.22621.0
       - name: Install Windows Swift toolchain
         uses: compnerd/gha-setup-swift@main
         with:
@@ -255,7 +262,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Run unit tests
         run: |
-          swift test ${PACKAGE_ROOT} ${WITH_TSAN} ${TEST_FILTER} ${EXTRA_FLAGS}
+          swift test ${PACKAGE_ROOT} ${WITH_TSAN} ${TEST_FILTER} ${EXTRA_FLAGS} -Xbuild-tools-swiftc -windows-sdk-root -Xbuild-tools-swiftc "${env:WindowsSdkDir}" -Xbuild-tools-swiftc -windows-sdk-version -Xbuild-tools-swiftc ${env:UCRTVersion} -Xswiftc -windows-sdk-root -Xswiftc "${env:WindowsSdkDir}" -Xswiftc -windows-sdk-version -Xswiftc ${env:UCRTVersion}
 
   ios-unit:
     if: ${{ !(github.event.pull_request.draft || false) && inputs.ios_scheme_name != '' }}
@@ -273,7 +280,7 @@ jobs:
   lint:
     if: ${{ inputs.with_linting }}
     runs-on: ubuntu-latest
-    container: swift:6.0-noble
+    container: swift:noble
     timeout-minutes: 5
     steps:
       - name: Configure git
@@ -296,13 +303,13 @@ jobs:
   musl:
     if: ${{ !(github.event.pull_request.draft || false) && inputs.with_musl }}
     runs-on: ubuntu-latest
-    container: swift:6.0-noble
+    container: swift:noble
     timeout-minutes: 30
     steps:
       - name: Check out code
         uses: actions/checkout@v4
       - name: Install SDK
-        run: swift sdk install https://download.swift.org/swift-6.0.3-release/static-sdk/swift-6.0.3-RELEASE/swift-6.0.3-RELEASE_static-linux-0.0.1.artifactbundle.tar.gz --checksum 67f765e0030e661a7450f7e4877cfe008db4f57f177d5a08a6e26fd661cdd0bd
+        run: swift sdk install https://download.swift.org/swift-6.1-release/static-sdk/swift-6.1-RELEASE/swift-6.1-RELEASE_static-linux-0.0.1.artifactbundle.tar.gz --checksum 111c6f7d280a651208b8c74c0521dd99365d785c1976a6e23162f55f65379ac6
       - name: Build
         run: swift build --swift-sdk x86_64-swift-linux-musl ${PACKAGE_PATH} ${EXTRA_FLAGS} ${EXTRA_MUSL_FLAGS} ${WARNINGS_AS_ERRORS}
 
