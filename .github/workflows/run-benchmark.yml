@@ -31,7 +31,7 @@ jobs:
 
     steps:
       - name: Configure RunsOn
-        uses: runs-on/action@v1
+        uses: runs-on/action@v2
 
       # jemalloc is a dependency of the Benchmarking package
       # actions/cache will detect zstd and will become much faster.
