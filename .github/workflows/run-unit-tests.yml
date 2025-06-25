@@ -305,7 +305,7 @@ jobs:
       # NOTE: Portions of this workflow are adapted from
       # https://github.com/apple/swift-nio/pull/3159/
       - name: Install linux dependencies
-        run: apt-get update -y -q && apt-get install -y -q curl
+        run: apt-get update -y -q && apt-get install -y -q curl && apt-get install -y -q jq
       - name: Install SDK
         run: |
           version="$(swiftc --version | head -n1)"
