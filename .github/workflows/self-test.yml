@@ -32,26 +32,17 @@ on:
         required: false
         default: true
         description: "Set to 'true' to run swift-format's lint process. Defaults to 'true'."
-      with_windows:
-        type: boolean
+      with_platform:
+        type: choice
+        options:
+          - all
+          - windows
+          - musl
+          - wasm
+          - android
         required: false
-        default: true
-        description: "Set to 'true' to run tests on Windows. Defaults to 'true'."
-      with_musl:
-        type: boolean
-        required: false
-        default: true
-        description: "Set to 'true' to build with the Static Linux SDK to test MUSL compatibility. Defaults to 'true'."
-      with_wasm:
-        type: boolean
-        required: false
-        default: true
-        description: "Set to 'true' to build with the Wasm SDK to test Wasm compatibility. Defaults to 'true'."
-      with_android:
-        type: boolean
-        required: false
-        default: true
-        description: "Set to 'true' to run tests on Android. Defaults to 'true'."
+        default: all
+        description: "Select which platform to test, or select 'all' to test all platforms"
       ios_scheme_name:
         type: string
         required: false
@@ -73,8 +64,8 @@ jobs:
       with_api_check: ${{ inputs.with_api_check || true }}
       warnings_as_errors: ${{ inputs.warnings_as_errors || true }}
       with_linting: ${{ inputs.with_linting || true }}
-      with_windows: ${{ inputs.with_windows || true }}
-      with_musl: ${{ inputs.with_musl || true }}
-      with_wasm: ${{ inputs.with_wasm || true }}
-      with_android: ${{ inputs.with_android || true }}
+      with_windows: ${{ inputs.with_platform == 'all' || inputs.with_platform == 'windows' || true }}
+      with_musl: ${{ inputs.with_platform == 'all' || inputs.with_platform == 'musl' || true }}
+      with_wasm: ${{ inputs.with_platform == 'all' || inputs.with_platform == 'wasm' || true }}
+      with_android: ${{ inputs.with_platform == 'all' || inputs.with_platform == 'android'|| true }}
       ios_scheme_name: ${{ inputs.ios_scheme_name || 'sample-testable-package-Package' }}
