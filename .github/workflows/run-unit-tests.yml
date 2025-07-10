@@ -57,6 +57,11 @@ on:
         required: false
         default: false
         description: "Set to 'true' to build with the Static Linux SDK to test MUSL compatibility. Defaults to 'false'."
+      with_wasm:
+        type: boolean
+        required: false
+        default: false
+        description: "Set to 'true' to build with the SwiftWasm SDK to test WASM compatibility. Defaults to 'false'."
       with_android:
         type: boolean
         required: false
@@ -290,6 +295,26 @@ jobs:
         run: swift sdk install https://download.swift.org/swift-6.1-release/static-sdk/swift-6.1-RELEASE/swift-6.1-RELEASE_static-linux-0.0.1.artifactbundle.tar.gz --checksum 111c6f7d280a651208b8c74c0521dd99365d785c1976a6e23162f55f65379ac6
       - name: Build
         run: swift build --swift-sdk x86_64-swift-linux-musl ${PACKAGE_PATH} ${EXTRA_FLAGS} ${EXTRA_MUSL_FLAGS} ${WARNINGS_AS_ERRORS}
+        
+  wasm:
+    if: ${{ !(github.event.pull_request.draft || false) && inputs.with_wasm }}
+    runs-on: ubuntu-latest
+    container: swift:6.1.0-noble
+    timeout-minutes: 30
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      # NOTE: Portions of this workflow are adapted from
+      # https://github.com/apple/swift-nio/pull/3159/
+      - name: Install linux dependencies
+        run: apt-get update -y -q && apt-get install -y -q curl && apt-get install -y -q jq
+      - name: Install SDK
+        run: |
+          version="$(swiftc --version | head -n1)"
+          tag="$(curl -sL "https://raw.githubusercontent.com/swiftwasm/swift-sdk-index/refs/heads/main/v1/tag-by-version.json" | jq -e -r --arg v "$version" '.[$v] | .[-1]')"
+          curl -sL "https://raw.githubusercontent.com/swiftwasm/swift-sdk-index/refs/heads/main/v1/builds/$tag.json" | jq -r '.["swift-sdks"]["wasm32-unknown-wasip1-threads"] | "swift sdk install \"\(.url)\" --checksum \"\(.checksum)\""' | sh -x
+      - name: Build
+        run: swift build --swift-sdk wasm32-unknown-wasip1-threads ${PACKAGE_PATH} ${EXTRA_FLAGS} ${WARNINGS_AS_ERRORS}
 
   android-unit:
     if: ${{ !(github.event.pull_request.draft || false) && inputs.with_android }}
