@@ -138,6 +138,10 @@ jobs:
     container: ${{ matrix.swift-config.image }}
     timeout-minutes: 60
     steps:
+      - name: Install curl
+        run: |
+          apt-get update -y -q
+          apt-get install -y curl
       - name: Check out code
         if: ${{ matrix.swift-config.build-mode == 'debug' || inputs.with_release_mode_testing }}
         uses: actions/checkout@v4
