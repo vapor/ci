@@ -17,7 +17,7 @@ env:
 jobs:
   benchmark-vs-thresholds:
     # https://runs-on.com/features/custom-runners/
-    runs-on: runs-on=${{ github.run_id }}/cpu=2/ram=4
+    runs-on: runs-on=${{ github.run_id }}/runner=2cpu-4ram
     container: swift:noble
 
     defaults:
