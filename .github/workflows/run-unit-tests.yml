@@ -98,7 +98,7 @@ on:
 env:
   WITH_TESTING: ${{ inputs.with_testing && '-Xswiftc -enable-testing' || '' }}
   PACKAGE_ROOT: ${{ inputs.package_root != '' && format('--package-path={0}', inputs.package_root) || '' }}
-  EXTRA_FLAGS:  ${{ inputs.extra_flags }}
+  EXTRA_FLAGS:  ${{ inputs.extra_flags || '--explicit-target-dependency-import-check error -Xswiftc -require-explicit-sendable' }}
   EXTRA_MUSL_FLAGS: ${{ inputs.extra_musl_flags }}
   WITH_TSAN: ${{ inputs.with_tsan && '--sanitize=thread' || '' }}
   WARNINGS_AS_ERRORS: ${{ inputs.warnings_as_errors && '-Xswiftc -warnings-as-errors' || '' }}
@@ -139,9 +139,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Install curl
-        run: |
-          apt-get update -y -q
-          apt-get install -y curl
+        run: apt-get update -yq && apt-get install -y curl
       - name: Check out code
         if: ${{ matrix.swift-config.build-mode == 'debug' || inputs.with_release_mode_testing }}
         uses: actions/checkout@v5
@@ -154,7 +152,6 @@ jobs:
       - name: Run unit tests
         if: ${{ steps.swift-check.outputs.swift-compatible == 'true' && (matrix.swift-config.build-mode == 'debug' || inputs.with_release_mode_testing) }}
         run: |
-          SWIFT_DETERMINISTIC_HASHING=1 \
           swift test \
             -c ${{ matrix.swift-config.build-mode }} \
             ${WITH_TESTING} \
@@ -201,7 +198,6 @@ jobs:
         env:
           WITH_TSAN_MACOS: ${{ (inputs.with_tsan && matrix.macos-version != 'macos-14') && '--sanitize=thread' || '' }}
         run: |
-          SWIFT_DETERMINISTIC_HASHING=1 \
           swift test \
             ${PACKAGE_ROOT} \
             ${WITH_TSAN_MACOS} \
@@ -222,13 +218,9 @@ jobs:
       fail-fast: false
       matrix:
         swift-version:
-          # - 5.9
-          # - 5.10
           - 6.0
           #- 6.1
         include:
-          # - { swift-version: 5.9, swift-branch: swift-5.9.2-release, swift-tag: 5.9.2-RELEASE }
-          # - { swift-version: 5.10, swift-branch: swift-5.10.1-release, swift-tag: 5.10.1-RELEASE }
           - { swift-version: 6.0, swift-branch: swift-6.0.3-release, swift-tag: 6.0.3-RELEASE }
           #- { swift-version: 6.1, swift-branch: swift-6.1-release, swift-tag: 6.1-RELEASE }
     runs-on: windows-latest
