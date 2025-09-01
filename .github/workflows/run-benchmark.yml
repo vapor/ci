@@ -51,7 +51,7 @@ jobs:
             PR_NUMBER="$(echo "${PR}" | jq -r '.number')"
 
             if [[ -z "${PR_NUMBER}" ]]; then
-              echo 'failed to find PR info for commit '${{ inputs.sha }}''
+              echo 'failed to find PR info for commit "${{ inputs.sha }}"'
               exit 1
             fi
 
@@ -59,7 +59,7 @@ jobs:
             echo "sha=${FULL_SHA}" >> "${GITHUB_OUTPUT}"
             echo "title=${PR_TITLE}" >> "${GITHUB_OUTPUT}"
             echo "pr_number=${PR_NUMBER}" >> "${GITHUB_OUTPUT}"
-            SHORT_NAME="$(echo $FULL_SHA | cut -c 1-7)"
+            SHORT_NAME="$(echo "${FULL_SHA}" | cut -c 1-7)"
             FILES_LINK="https://github.com/${{ github.repository }}/pull/${PR_NUMBER}/commits/${FULL_SHA}"
           else
             echo 'ref=${{ github.ref }}' >> "${GITHUB_OUTPUT}"
@@ -126,17 +126,14 @@ jobs:
             --package-path Benchmarks \
             benchmark baseline read \
             '${{ steps.commit-info.outputs.title }}' \
-            --no-progress \
             --format markdown \
-            >> benchmark.md
+            | tee -a benchmark.md
 
       - name: Compare '${{ steps.commit-info.outputs.title }}' against thresholds
         id: comparison
         run: |
-          TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
-          ENCODED_TIMESTAMP=$(date -u +"%Y-%m-%dT%H%%3A%M%%3A%SZ")
-          TIMESTAMP_LINK="https://www.timeanddate.com/worldclock/fixedtime.html?iso=$ENCODED_TIMESTAMP"
-          echo "## Benchmark check running at [$TIMESTAMP]($TIMESTAMP_LINK)" >> comparison.md
+          TIMESTAMP="$(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+          echo "## Benchmark check running at ${TIMESTAMP}" | tee -a comparison.md
 
           # Disable 'set -e' to prevent the script from exiting on non-zero exit codes
           set +e
@@ -144,15 +141,14 @@ jobs:
             --package-path Benchmarks \
             benchmark thresholds check \
             '${{ steps.commit-info.outputs.title }}' \
-            --path "$PWD/Benchmarks/Thresholds/" \
-            --no-progress \
+            --path "Benchmarks/Thresholds/" \
             --format markdown \
-            >> comparison.md
+            | tee -a comparison.md
           echo "exit-status=$?" >> "${GITHUB_OUTPUT}"
           set -e
 
       - name: Cache .build
-        if: steps.restore-cache.outputs.cache-hit != 'true'
+        if: ${{ runner.debug != '1' && steps.restore-cache.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@v4
         with:
           path: Benchmarks/.build
@@ -160,43 +156,19 @@ jobs:
 
       - name: Construct result comment
         run: |
-          echo "## [Benchmark](${RUN_LINK}) Report for ${{ steps.commit-info.outputs.md_link }}" >> comment.md
+          echo "## [Benchmark](${RUN_LINK}) Report for ${{ steps.commit-info.outputs.md_link }}" | tee -a comment.md
 
           EXIT_CODE='${{ steps.comparison.outputs.exit-status }}'
-
           case "${EXIT_CODE}" in
-              0)
-                  echo '**✅ Pull request has no significant performance differences ✅**' >> comment.md
-                  ;;
-              1)
-                  echo '**❌ Pull request has significant performance differences 📊**' >> comment.md
-                  ;;
-              2)
-                  echo '**❌ Pull request has significant performance regressions 📉**' >> comment.md
-                  ;;
-              4)
-                  echo '**❌ Pull request has significant performance improvements 📈**' >> comment.md
-                  ;;
-              *)
-                  echo '**❌ Benchmark comparison failed to complete properly with exit code $EXIT_CODE ❌**' >> comment.md
-                  ;;
+              0) echo '**✅ Pull request has no significant performance differences ✅**' | tee -a comment.md ;;
+              1) echo '**❓ Pull request has significant performance differences 📊**' | tee -a comment.md ;;
+              2) echo '**❌ Pull request has significant performance regressions 📉**' | tee -a comment.md ;;
+              4) echo '**⚠️ Pull request has significant performance improvements 📈**' | tee -a comment.md ;;
+              *) echo '**🚫 Benchmark comparison failed with unknown exit code ${EXIT_CODE} 🚫**' | tee -a comment.md ;;
           esac
 
-          echo '<details>' >> comment.md
-          echo '  <summary> Click to expand comparison result </summary>' >> comment.md
-          echo '' >> comment.md
-          cat comparison.md >> comment.md
-          echo '' >> comment.md
-          echo '</details>' >> comment.md
-
-          echo '' >> comment.md
-
-          echo '<details>' >> comment.md
-          echo '  <summary> Click to expand benchmark result </summary>' >> comment.md
-          echo '' >> comment.md
-          cat benchmark.md >> comment.md
-          echo '' >> comment.md
-          echo '</details>' >> comment.md
+          printf '<details>\n  <summary>Click to expand comparison result</summary>\n\n%s\n\n</details>\n\n' "$(cat comparison.md)" | tee -a comment.md
+          printf '<details>\n  <summary>Click to expand benchmark result</summary>\n\n%s\n\n</details>\n\n' "$(cat benchmark.md)" | tee -a comment.md
 
       - name: Update comment in PR
         if: steps.commit-info.outputs.pr_number != ''
@@ -212,7 +184,7 @@ jobs:
         run: |
           cat comment.md >> "${GITHUB_STEP_SUMMARY}"
           if [[ -n '${{ steps.commit-info.outputs.pr_number }}' ]]; then
-            echo 'Commented at ${{ steps.pr-comment.outputs.html-url }}' >> "${GITHUB_STEP_SUMMARY}"
+            echo 'Commented at [PR comment](${{ steps.pr-comment.outputs.html-url }})' >> "${GITHUB_STEP_SUMMARY}"
           fi
 
       - name: Update commit status
