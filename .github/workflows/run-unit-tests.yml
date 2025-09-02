@@ -120,7 +120,7 @@ jobs:
       - name: Run API breakage check
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
-          swift package ${PACKAGE_ROOT} diagnose-api-breaking-changes origin/main ${EXTRA_FLAGS}
+          swift package ${PACKAGE_ROOT} diagnose-api-breaking-changes origin/main
 
   linux-unit:
     if: ${{ !(github.event.pull_request.draft || false) }}
