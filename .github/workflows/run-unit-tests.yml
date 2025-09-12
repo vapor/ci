@@ -250,7 +250,8 @@ jobs:
       - name: Select appropriate Xcode version
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: latest-stable
+          # latest-stable is broken for iOS on macos-15 runners as of this writing
+          xcode-version: 16
       - name: Check out code
         uses: actions/checkout@v5
       - name: Run iOS Tests
