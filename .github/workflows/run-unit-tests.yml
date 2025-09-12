@@ -255,7 +255,7 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v5
       - name: Run iOS Tests
-        run: xcodebuild ${IOS_XCODEBUILD_ACTION} -scheme ${IOS_SCHEME_NAME} -destination 'generic/platform=iOS' OTHER_SWIFT_FLAGS="${EXTRA_FLAGS}"
+        run: xcodebuild ${IOS_XCODEBUILD_ACTION} -scheme ${IOS_SCHEME_NAME} -destination 'generic/platform=iOS'
 
   lint:
     if: ${{ inputs.with_linting }}
