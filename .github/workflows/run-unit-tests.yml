@@ -248,8 +248,7 @@ jobs:
       - name: Select appropriate Xcode version
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          # latest-stable is broken for iOS on macos-15 runners as of this writing
-          xcode-version: 16
+          xcode-version: latest-stable
       - name: Check out code
         uses: actions/checkout@v5
       - name: Run iOS Tests
@@ -294,7 +293,7 @@ jobs:
   wasm:
     if: ${{ !(github.event.pull_request.draft || false) && inputs.with_wasm }}
     runs-on: ubuntu-latest
-    container: swift:6.1.3-noble
+    container: swift:6.1.0-noble
     timeout-minutes: 30
     steps:
       - name: Check out code
