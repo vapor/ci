@@ -175,7 +175,7 @@ jobs:
         include:
           - macos-version: macos-14
             xcode-version: latest-stable
-          - macos-version: macos-15
+          - macos-version: macos-26
             xcode-version: latest-stable
     runs-on: ${{ matrix.macos-version }}
     timeout-minutes: 60
