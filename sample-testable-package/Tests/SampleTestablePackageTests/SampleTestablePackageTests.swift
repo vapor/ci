@@ -1,16 +1,19 @@
-import XCTest
+import Testing
 
 @testable import SampleTestablePackage
 
-final class SampleTestablePackageTests: XCTestCase {
-    func testDefaultTest() throws {
-        XCTAssertEqual(SampleTestablePackage().text, "Hello, World!")
+@Suite
+struct SampleTestablePackageTests {
+    @Test
+    func defaultTest() throws {
+        #expect(SampleTestablePackage().text == "Hello, World!")
     }
 
-    func testNormalization() throws {
+    @Test
+    func normalization() throws {
         var p = SampleTestablePackage()
 
         p.setNormalized(text: "Hello, World!")
-        XCTAssertEqual(p.text, "hello, world!")
+        #expect(p.text == "hello, world!")
     }
 }

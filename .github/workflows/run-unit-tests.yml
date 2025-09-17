@@ -128,12 +128,10 @@ jobs:
       fail-fast: false
       matrix:
         swift-config:
-          - { image: "swift:5.10-jammy", "build-mode": "debug" }
           - { image: "swift:6.0-noble", "build-mode": "debug" }
           - { image: "swift:6.1-noble", "build-mode": "debug" }
-          - { image: "swift:6.1-noble", "build-mode": "release" }
-          - { image: "swiftlang/swift:nightly-6.2-noble", "build-mode": "debug" }
-          - { image: "swiftlang/swift:nightly-6.2-noble", "build-mode": "release" }
+          - { image: "swift:6.2-noble", "build-mode": "debug" }
+          - { image: "swift:6.2-noble", "build-mode": "release" }
     runs-on: ubuntu-latest
     container: ${{ matrix.swift-config.image }}
     timeout-minutes: 60
@@ -175,9 +173,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - macos-version: macos-14
-            xcode-version: latest-stable
           - macos-version: macos-15
+            xcode-version: latest-stable
+          - macos-version: macos-26
             xcode-version: latest-stable
     runs-on: ${{ matrix.macos-version }}
     timeout-minutes: 60
@@ -245,17 +243,19 @@ jobs:
 
   ios-unit:
     if: ${{ !(github.event.pull_request.draft || false) && inputs.ios_scheme_name != '' }}
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - name: Select appropriate Xcode version
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          # latest-stable is broken for iOS on macos-15 runners as of this writing
-          xcode-version: 16
+          xcode-version: latest-stable
       - name: Check out code
         uses: actions/checkout@v5
       - name: Run iOS Tests
-        run: xcodebuild ${IOS_XCODEBUILD_ACTION} -scheme ${IOS_SCHEME_NAME} -destination 'generic/platform=iOS'
+        run: |
+          name="$(xcrun simctl list -j -e devices | jq -r '[.devices | to_entries[] | select(.key | contains(".iOS-"))] | sort_by(.key) | last | .value | first | .name')"
+          echo "Using '${name}' as destination"
+          xcodebuild ${IOS_XCODEBUILD_ACTION} -scheme ${IOS_SCHEME_NAME} -destination "platform=iOS Simulator,name=${name}"
 
   lint:
     if: ${{ inputs.with_linting }}
@@ -289,7 +289,7 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v5
       - name: Install SDK
-        run: swift sdk install https://download.swift.org/swift-6.1.2-release/static-sdk/swift-6.1.2-RELEASE/swift-6.1.2-RELEASE_static-linux-0.0.1.artifactbundle.tar.gz --checksum df0b40b9b582598e7e3d70c82ab503fd6fbfdff71fd17e7f1ab37115a0665b3b
+        run: swift sdk install https://download.swift.org/swift-6.2-release/static-sdk/swift-6.2-RELEASE/swift-6.2-RELEASE_static-linux-0.0.1.artifactbundle.tar.gz --checksum d2225840e592389ca517bbf71652f7003dbf45ac35d1e57d98b9250368769378
       - name: Build
         run: swift build --swift-sdk x86_64-swift-linux-musl ${PACKAGE_PATH} ${EXTRA_FLAGS} ${EXTRA_MUSL_FLAGS} ${WARNINGS_AS_ERRORS}
         
