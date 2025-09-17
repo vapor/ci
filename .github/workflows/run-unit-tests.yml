@@ -173,7 +173,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - macos-version: macos-14
+          - macos-version: macos-15
             xcode-version: latest-stable
           - macos-version: macos-26
             xcode-version: latest-stable
@@ -243,7 +243,7 @@ jobs:
 
   ios-unit:
     if: ${{ !(github.event.pull_request.draft || false) && inputs.ios_scheme_name != '' }}
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - name: Select appropriate Xcode version
         uses: maxim-lobanov/setup-xcode@v1
