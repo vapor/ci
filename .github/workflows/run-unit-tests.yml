@@ -233,8 +233,8 @@ jobs:
       - name: Install Windows Swift toolchain
         uses: compnerd/gha-setup-swift@main
         with:
-          branch: ${{ matrix.swift-branch }}
-          tag: ${{ matrix.swift-tag }}
+          swift-branch: ${{ matrix.swift-branch }}
+          swift-tag: ${{ matrix.swift-tag }}
       - name: Check out code
         uses: actions/checkout@v5
       - name: Run unit tests
