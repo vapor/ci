@@ -13,41 +13,57 @@ outputs:
     description: >
       The string "true" if the package is compatible with the installed Swift toolchain,
       otherwise the string "false".
-    value: ${{ steps.swift-version-check.outputs.ok }}
+    value: ${{ format('{0}{1}', steps.swift-version-check-unix.outputs.ok, steps.swift-version-check-win.outputs.ok) }}
 
 runs:
   using: composite
   steps:
-      - name: Compare package's Swift and platform versions to the installed
-        id: swift-version-check
-        env:
-          PACKAGE_ROOT: ${{ inputs.package_root != '' && format('--package-path={0}', inputs.package_root) || '' }}
-        shell: bash
-        run: |
-          function parse_version() { \
-            local major="$(echo $1 | cut -d . -f 1)"; \
-            local minor="$(echo $1 | cut -d . -f 2)"; \
-            local patch="$(echo $1 | cut -d . -f 3)"; \
-            \
-            echo $(( ${major} * 10000 + ${minor:-0} * 100 + ${patch:-0} )); \
-          }
-          
-          toolchain_version=$(parse_version $(swift package --version | cut -c31-))
-          package_version=$(parse_version $(swift package ${PACKAGE_ROOT} tools-version))
-          
-          swift_is_compatible=$((( ${package_version} <= ${toolchain_version} )) && echo true || echo false)
+    - name: Compare package's Swift and platform versions to the installed (UNIX)
+      id: swift-version-check-unix
+      if: ${{ runner.os != 'Windows' }}
+      env:
+        PACKAGE_ROOT: ${{ inputs.package_root != '' && format('--package-path={0}', inputs.package_root) || '' }}
+      shell: bash
+      run: |
+        function parse_version() { \
+          local major="$(echo $1 | cut -d . -f 1)"; \
+          local minor="$(echo $1 | cut -d . -f 2)"; \
+          local patch="$(echo $1 | cut -d . -f 3)"; \
+          \
+          echo $(( ${major} * 10000 + ${minor:-0} * 100 + ${patch:-0} )); \
+        }
+        
+        toolchain_version=$(parse_version $(swift package --version | cut -c31-))
+        package_version=$(parse_version $(swift package ${PACKAGE_ROOT} tools-version))
+        
+        swift_is_compatible=$((( ${package_version} <= ${toolchain_version} )) && echo true || echo false)
 
-          if [[ "$(uname)" == "Darwin" ]]; then
-            raw_platfrom_version=$((swift package dump-package || echo '') | jq -r '.platforms[] | select(.platformName == "macos") | .version')
-            if [[ "${raw_platfrom_version}" == "null" || -z "${raw_platfrom_version}" ]]; then
-              platform_is_compatible=true
-            else
-              platform_version=$(parse_version ${raw_platfrom_version})
-              current_platform=$(parse_version $(sw_vers -productVersion))
-              platform_is_compatible=$((( ${platform_version} <= ${current_platform} )) && echo true || echo false)
-            fi
-          else
+         if [[ "$(uname)" == "Darwin" ]]; then
+          raw_platfrom_version=$((swift package ${PACKAGE_ROOT} dump-package || echo '') | jq -r '.platforms[] | select(.platformName == "macos") | .version')
+          if [[ "${raw_platfrom_version}" == "null" || -z "${raw_platfrom_version}" ]]; then
             platform_is_compatible=true
+          else
+            platform_version=$(parse_version ${raw_platfrom_version})
+            current_platform=$(parse_version $(sw_vers -productVersion))
+            platform_is_compatible=$((( ${platform_version} <= ${current_platform} )) && echo true || echo false)
           fi
+        else
+          platform_is_compatible=true
+        fi
 
-          echo "ok=$([[ "${swift_is_compatible}" == true && "${platform_is_compatible}" == true ]] && echo true || echo false)" >> "${GITHUB_OUTPUT}"
+        echo "ok=$([[ "${swift_is_compatible}" == true && "${platform_is_compatible}" == true ]] && echo true || echo false)" >> "${GITHUB_OUTPUT}"
+    - name: Compare package's Swift and platform versions to the installed (Windows)
+      id: swift-version-check-win
+      if: ${{ runner.os == 'Windows' }}
+      env:
+        PACKAGE_ROOT: ${{ inputs.package_root != '' && format('--package-path={0}', inputs.package_root) || '' }}
+      shell: pwsh
+      run: |
+        $toolchain_version = (swift package $env:PACKAGE_ROOT --version | Select-Object -First 1).Replace('-dev', '').Split('.')
+        $toolchain_version = (($toolchain_version[0] -as [int]) * 10000) + (($toolchain_version[1] -as [int]) * 100) + ($toolchain_version[2] -as [int])
+
+        $package_version = (swift package $env:PACKAGE_ROOT tools-version | Select-Object -First 1).Substring(30).Replace('-dev', '').Split('.')
+        $package_version = (($package_version[0] -as [int]) * 10000) + (($package_version[1] -as [int]) * 100) + ($package_version[2] -as [int])
+
+        $swift_is_compatible = (($package_version -le $toolchain_version) -as [string]).ToLower()
+        "ok=${swift_is_compatible} >> $env:GITHUB_OUTPUT
