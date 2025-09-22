@@ -235,6 +235,7 @@ jobs:
         with:
           swift-branch: ${{ matrix.swift-branch }}
           swift-tag: ${{ matrix.swift-tag }}
+          update-sdk-modules: true
       - name: Check out code
         uses: actions/checkout@v5
       - name: Run unit tests
