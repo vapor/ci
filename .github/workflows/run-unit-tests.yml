@@ -232,11 +232,16 @@ jobs:
           update-sdk-modules: true
       - name: Check out code
         uses: actions/checkout@v5
+      - name: Check Swift compatibility
+        id: swift-check
+        uses: vapor/ci/.github/actions/check-compatible-swift@main
+        with:
+          package_root: ${{ inputs.package_root }}
       - name: Run unit tests
+        if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
         run: |
           $params = @(); $params += ($env:WARNINGS_AS_ERRORS -split ' '); $params += ($env:EXTRA_FLAGS -split ' ')
           swift test $env:PACKAGE_ROOT $env:TEST_FILTER @params
-          #-Xbuild-tools-swiftc -windows-sdk-root -Xbuild-tools-swiftc "${env:WindowsSdkDir}" -Xbuild-tools-swiftc -windows-sdk-version -Xbuild-tools-swiftc ${env:UCRTVersion} -Xswiftc -windows-sdk-root -Xswiftc "${env:WindowsSdkDir}" -Xswiftc -windows-sdk-version -Xswiftc ${env:UCRTVersion}
 
   ios-unit:
     if: ${{ !(github.event.pull_request.draft || false) && inputs.ios_scheme_name != '' }}
