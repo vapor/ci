@@ -66,4 +66,4 @@ runs:
         $package_version = (($package_version[0] -as [int]) * 10000) + (($package_version[1] -as [int]) * 100) + ($package_version[2] -as [int])
 
         $swift_is_compatible = (($package_version -le $toolchain_version) -as [string]).ToLower()
-        "ok=${swift_is_compatible} >> $env:GITHUB_OUTPUT
+        "ok=${swift_is_compatible}" >> $env:GITHUB_OUTPUT
