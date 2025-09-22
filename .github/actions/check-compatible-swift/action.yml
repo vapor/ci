@@ -59,10 +59,10 @@ runs:
         PACKAGE_ROOT: ${{ inputs.package_root != '' && format('--package-path={0}', inputs.package_root) || '' }}
       shell: pwsh
       run: |
-        $toolchain_version = (swift package $env:PACKAGE_ROOT --version | Select-Object -First 1).Replace('-dev', '').Split('.')
+        $toolchain_version = (swift package $env:PACKAGE_ROOT --version | Select-Object -First 1).Substring(30).Replace('-dev', '').Split('.')
         $toolchain_version = (($toolchain_version[0] -as [int]) * 10000) + (($toolchain_version[1] -as [int]) * 100) + ($toolchain_version[2] -as [int])
 
-        $package_version = (swift package $env:PACKAGE_ROOT tools-version | Select-Object -First 1).Substring(30).Replace('-dev', '').Split('.')
+        $package_version = (swift package $env:PACKAGE_ROOT tools-version | Select-Object -First 1).Replace('-dev', '').Split('.')
         $package_version = (($package_version[0] -as [int]) * 10000) + (($package_version[1] -as [int]) * 100) + ($package_version[2] -as [int])
 
         $swift_is_compatible = (($package_version -le $toolchain_version) -as [string]).ToLower()
