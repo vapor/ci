@@ -38,7 +38,7 @@ runs:
           echo $(( ${major} * 10000 + ${minor:-0} * 100 + ${patch:-0} )); \
         }
 
-        if [[ -n "${OVERRIDE_TOOLCHAIN_VER} ]]; then
+        if [[ -n "${OVERRIDE_TOOLCHAIN_VER}" ]]; then
           toolchain_version=$(parse_version ${OVERRIDE_TOOLCHAIN_VER})
         else
           toolchain_version=$(parse_version $(swift package --version | cut -c31-))
