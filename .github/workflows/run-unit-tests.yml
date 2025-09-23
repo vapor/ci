@@ -347,6 +347,7 @@ jobs:
         uses: vapor/ci/.github/actions/check-compatible-swift@main
         with:
           package_root: ${{ inputs.package_root }}
+          assume-installed-version: ${{ matrix.swift-version }}
       - name: Run unit tests
         if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
         uses: skiptools/swift-android-action@v2
