@@ -27,7 +27,7 @@ runs:
       if: ${{ runner.os != 'Windows' }}
       env:
         PACKAGE_ROOT: ${{ inputs.package_root != '' && format('--package-path={0}', inputs.package_root) || '' }}
-        OVERRIDE_TOOLCHAIN_VER: ${{ inputs.assume0installed-version }}
+        OVERRIDE_TOOLCHAIN_VER: ${{ inputs.assume-installed-version }}
       shell: bash
       run: |
         function parse_version() { \
