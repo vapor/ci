@@ -292,7 +292,13 @@ jobs:
         uses: actions/checkout@v5
       - name: Install SDK
         run: swift sdk install https://download.swift.org/swift-6.2-release/static-sdk/swift-6.2-RELEASE/swift-6.2-RELEASE_static-linux-0.0.1.artifactbundle.tar.gz --checksum d2225840e592389ca517bbf71652f7003dbf45ac35d1e57d98b9250368769378
+      - name: Check Swift compatibility
+        id: swift-check
+        uses: vapor/ci/.github/actions/check-compatible-swift@main
+        with:
+          package_root: ${{ inputs.package_root }}
       - name: Build
+        if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
         run: swift build --swift-sdk x86_64-swift-linux-musl ${PACKAGE_PATH} ${EXTRA_FLAGS} ${EXTRA_MUSL_FLAGS} ${WARNINGS_AS_ERRORS}
         
   wasm:
@@ -312,7 +318,13 @@ jobs:
           version="$(swiftc --version | head -n1)"
           tag="$(curl -sL "https://raw.githubusercontent.com/swiftwasm/swift-sdk-index/refs/heads/main/v1/tag-by-version.json" | jq -e -r --arg v "$version" '.[$v] | .[-1]')"
           curl -sL "https://raw.githubusercontent.com/swiftwasm/swift-sdk-index/refs/heads/main/v1/builds/$tag.json" | jq -r '.["swift-sdks"]["wasm32-unknown-wasip1-threads"] | "swift sdk install \"\(.url)\" --checksum \"\(.checksum)\""' | sh -x
+      - name: Check Swift compatibility
+        id: swift-check
+        uses: vapor/ci/.github/actions/check-compatible-swift@main
+        with:
+          package_root: ${{ inputs.package_root }}
       - name: Build
+        if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
         run: swift build --swift-sdk wasm32-unknown-wasip1-threads ${PACKAGE_PATH} ${EXTRA_FLAGS} ${WARNINGS_AS_ERRORS}
 
   android-unit:
@@ -330,7 +342,13 @@ jobs:
         run: sudo apt-get update -yq && sudo apt-get install -yq zstd
       - name: Check out code
         uses: actions/checkout@v5
+      - name: Check Swift compatibility
+        id: swift-check
+        uses: vapor/ci/.github/actions/check-compatible-swift@main
+        with:
+          package_root: ${{ inputs.package_root }}
       - name: Run unit tests
+        if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
         uses: skiptools/swift-android-action@v2
         with:
           swift-version: ${{ matrix.swift-version }}
