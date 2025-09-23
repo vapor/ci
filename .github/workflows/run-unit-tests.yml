@@ -327,7 +327,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Ensure zstd is available
-        run: apt-get update -yq && apt-get install -yq zstd
+        run: sudo apt-get update -yq && sudo apt-get install -yq zstd
       - name: Check out code
         uses: actions/checkout@v5
       - name: Run unit tests
