@@ -150,7 +150,7 @@ jobs:
       - name: Strip flags incompatible with 6.0
         if: ${{ matrix.swift-config.image == 'swift:6.0-noble' && steps.swift-check.outputs.swift-compatible == 'true' && (matrix.swift-config.build-mode == 'debug' || inputs.with_release_mode_testing) }}
         shell: bash
-        run: 'echo "EXTRA_FLAGS=${EXTRA_FLAGS//--(dis|en)able-experimental-prebuilts//}" >>"${GITHUB_ENV}"'
+        run: 'echo "EXTRA_FLAGS=$(echo "${EXTRA_FLAGS}" | sed -Ee "s/--(dis|en)able-experimental-prebuilts//g")" >>"${GITHUB_ENV}"'
       - name: Run unit tests
         if: ${{ steps.swift-check.outputs.swift-compatible == 'true' && (matrix.swift-config.build-mode == 'debug' || inputs.with_release_mode_testing) }}
         run: |
