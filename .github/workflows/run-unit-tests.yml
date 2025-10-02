@@ -169,7 +169,7 @@ jobs:
         with:
           codecov_token:    ${{ secrets.CODECOV_TOKEN || '' }}
           package_path:     ${{ inputs.package_root }}
-          build_parameters: -c ${{ matrix.swift-config.build-mode }} ${{ env.extra_flags }}
+          build_parameters: -c ${{ matrix.swift-config.build-mode }} ${{ env.EXTRA_FLAGS }}
 
   macos-unit:
     if: ${{ !(github.event.pull_request.draft || false) }}
@@ -210,7 +210,7 @@ jobs:
         with:
           codecov_token:    ${{ secrets.CODECOV_TOKEN || '' }}
           package_path:     ${{ inputs.package_root }}
-          build_parameters: ${{ inputs.extra_flags }}
+          build_parameters: '-c debug ${{ env.EXTRA_FLAGS }}'
 
   windows-unit:
     if: ${{ !(github.event.pull_request.draft || false) && inputs.with_windows }}
