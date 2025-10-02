@@ -154,7 +154,7 @@ jobs:
           # Swift 6.0 doesn't have support for these flags, and they are not meaningful in 6.1 anyway.
           # We strip them to make the 6.0 CI doesn't fail.
           # This way users can pass them in `extra_flags` if they want, and still have a working 6.0 CI.
-          if [[ "${{ matrix.swift-config.image }}" == "swift:6.0" ]]; then
+          if [[ "${{ matrix.swift-config.image }}" == "swift:6.0-noble" ]]; then
             EXTRA_FLAGS="$(echo "${EXTRA_FLAGS}" | sed 's/--disable-experimental-prebuilts//g')"
             EXTRA_FLAGS="$(echo "${EXTRA_FLAGS}" | sed 's/--enable-experimental-prebuilts//g')"
             echo "EXTRA_FLAGS=${EXTRA_FLAGS}" >> "${GITHUB_ENV}"
@@ -210,7 +210,7 @@ jobs:
           # Swift 6.0 doesn't have support for these flags, and they are not meaningful in 6.1 anyway.
           # We strip them to make the 6.0 CI doesn't fail.
           # This way users can pass them in `extra_flags` if they want, and still have a working 6.0 CI.
-          if [[ "${{ matrix.swift-config.image }}" == "swift:6.0" ]]; then
+          if [[ "${{ matrix.swift-config.image }}" == "swift:6.0-noble" ]]; then
             EXTRA_FLAGS="$(echo "${EXTRA_FLAGS}" | sed 's/--disable-experimental-prebuilts//g')"
             EXTRA_FLAGS="$(echo "${EXTRA_FLAGS}" | sed 's/--enable-experimental-prebuilts//g')"
             echo "EXTRA_FLAGS=${EXTRA_FLAGS}" >> "${GITHUB_ENV}"
