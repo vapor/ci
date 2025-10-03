@@ -147,6 +147,10 @@ jobs:
         uses: vapor/ci/.github/actions/check-compatible-swift@main
         with:
           package_root: ${{ inputs.package_root }}
+      - name: Strip flags incompatible with 6.0
+        if: ${{ matrix.swift-config.image == 'swift:6.0-noble' && steps.swift-check.outputs.swift-compatible == 'true' && (matrix.swift-config.build-mode == 'debug' || inputs.with_release_mode_testing) }}
+        shell: bash
+        run: 'echo "EXTRA_FLAGS=$(echo "${EXTRA_FLAGS}" | sed -Ee "s/--(dis|en)able-experimental-prebuilts//g")" >>"${GITHUB_ENV}"'
       - name: Run unit tests
         if: ${{ steps.swift-check.outputs.swift-compatible == 'true' && (matrix.swift-config.build-mode == 'debug' || inputs.with_release_mode_testing) }}
         run: |
@@ -165,7 +169,7 @@ jobs:
         with:
           codecov_token:    ${{ secrets.CODECOV_TOKEN || '' }}
           package_path:     ${{ inputs.package_root }}
-          build_parameters: -c ${{ matrix.swift-config.build-mode }} ${{ inputs.extra_flags }}
+          build_parameters: -c ${{ matrix.swift-config.build-mode }} ${{ env.EXTRA_FLAGS }}
 
   macos-unit:
     if: ${{ !(github.event.pull_request.draft || false) }}
@@ -206,7 +210,7 @@ jobs:
         with:
           codecov_token:    ${{ secrets.CODECOV_TOKEN || '' }}
           package_path:     ${{ inputs.package_root }}
-          build_parameters: ${{ inputs.extra_flags }}
+          build_parameters: -c debug ${{ env.EXTRA_FLAGS }}
 
   windows-unit:
     if: ${{ !(github.event.pull_request.draft || false) && inputs.with_windows }}
