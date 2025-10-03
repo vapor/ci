@@ -153,6 +153,10 @@ jobs:
         run: |
           apt-get update -y
           apt-get install -y zstd
+      - name: Strip flags incompatible with 6.0
+        if: ${{ matrix.swift-config.image == 'swift:6.0-noble' && steps.swift-check.outputs.swift-compatible == 'true' && (matrix.swift-config.build-mode == 'debug' || inputs.with_release_mode_testing) }}
+        shell: bash
+        run: 'echo "EXTRA_FLAGS=$(echo "${EXTRA_FLAGS}" | sed -Ee "s/--(dis|en)able-experimental-prebuilts//g")" >>"${GITHUB_ENV}"'
       - name: Restore .build
         # If this step is restoring malformed data, use 'Enable debug logging' on a re-run to disable the step.
         if: ${{ (runner.debug != '1') && (steps.swift-check.outputs.swift-compatible == 'true') && (matrix.swift-config.build-mode == 'debug' || inputs.with_release_mode_testing) }}
@@ -186,7 +190,7 @@ jobs:
         with:
           codecov_token:    ${{ secrets.CODECOV_TOKEN || '' }}
           package_path:     ${{ inputs.package_root }}
-          build_parameters: -c ${{ matrix.swift-config.build-mode }} ${{ inputs.extra_flags }}
+          build_parameters: -c ${{ matrix.swift-config.build-mode }} ${{ env.EXTRA_FLAGS }}
 
   macos-unit:
     if: ${{ !(github.event.pull_request.draft || false) }}
@@ -214,12 +218,10 @@ jobs:
           package_root: ${{ inputs.package_root }}
       - name: Run unit tests
         if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
-        env:
-          WITH_TSAN_MACOS: ${{ (inputs.with_tsan && matrix.macos-version != 'macos-14') && '--sanitize=thread' || '' }}
         run: |
           swift test \
             ${PACKAGE_ROOT} \
-            ${WITH_TSAN_MACOS} \
+            ${WITH_TSAN} \
             ${WITH_COVERAGE} \
             ${TEST_FILTER} \
             ${EXTRA_FLAGS}
@@ -229,7 +231,7 @@ jobs:
         with:
           codecov_token:    ${{ secrets.CODECOV_TOKEN || '' }}
           package_path:     ${{ inputs.package_root }}
-          build_parameters: ${{ inputs.extra_flags }}
+          build_parameters: -c debug ${{ env.EXTRA_FLAGS }}
 
   windows-unit:
     if: ${{ !(github.event.pull_request.draft || false) && inputs.with_windows }}
@@ -238,29 +240,33 @@ jobs:
       matrix:
         swift-version:
           - 6.0
-          #- 6.1
+          - 6.1
+          - 6.2
         include:
           - { swift-version: 6.0, swift-branch: swift-6.0.3-release, swift-tag: 6.0.3-RELEASE }
-          #- { swift-version: 6.1, swift-branch: swift-6.1-release, swift-tag: 6.1-RELEASE }
+          - { swift-version: 6.1, swift-branch: swift-6.1.3-release, swift-tag: 6.1.3-RELEASE }
+          - { swift-version: 6.2, swift-branch: swift-6.2-release, swift-tag: 6.2-RELEASE }
     runs-on: windows-latest
     timeout-minutes: 60
     steps:
-      # https://github.com/compnerd/cassowary/pull/27
-      - name: Configure dev environment
-        uses: compnerd/gha-setup-vsdevenv@main
-        with:
-          toolset_version: 14.29
-          winsdk: 10.0.22621.0
       - name: Install Windows Swift toolchain
         uses: compnerd/gha-setup-swift@main
         with:
-          branch: ${{ matrix.swift-branch }}
-          tag: ${{ matrix.swift-tag }}
+          swift-version: ${{ matrix.swift-branch }}
+          swift-build: ${{ matrix.swift-tag }}
+          update-sdk-modules: true
       - name: Check out code
         uses: actions/checkout@v5
+      - name: Check Swift compatibility
+        id: swift-check
+        uses: vapor/ci/.github/actions/check-compatible-swift@main
+        with:
+          package_root: ${{ inputs.package_root }}
       - name: Run unit tests
+        if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
         run: |
-          swift test ${PACKAGE_ROOT} ${WITH_TSAN} ${TEST_FILTER} ${EXTRA_FLAGS} -Xbuild-tools-swiftc -windows-sdk-root -Xbuild-tools-swiftc "${env:WindowsSdkDir}" -Xbuild-tools-swiftc -windows-sdk-version -Xbuild-tools-swiftc ${env:UCRTVersion} -Xswiftc -windows-sdk-root -Xswiftc "${env:WindowsSdkDir}" -Xswiftc -windows-sdk-version -Xswiftc ${env:UCRTVersion}
+          $params = @(); $params += ($env:WARNINGS_AS_ERRORS -split ' '); $params += ($env:EXTRA_FLAGS -split ' ')
+          swift test $env:PACKAGE_ROOT $env:TEST_FILTER @params
 
   ios-unit:
     if: ${{ !(github.event.pull_request.draft || false) && inputs.ios_scheme_name != '' }}
@@ -311,13 +317,19 @@ jobs:
         uses: actions/checkout@v5
       - name: Install SDK
         run: swift sdk install https://download.swift.org/swift-6.2-release/static-sdk/swift-6.2-RELEASE/swift-6.2-RELEASE_static-linux-0.0.1.artifactbundle.tar.gz --checksum d2225840e592389ca517bbf71652f7003dbf45ac35d1e57d98b9250368769378
+      - name: Check Swift compatibility
+        id: swift-check
+        uses: vapor/ci/.github/actions/check-compatible-swift@main
+        with:
+          package_root: ${{ inputs.package_root }}
       - name: Build
+        if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
         run: swift build --swift-sdk x86_64-swift-linux-musl ${PACKAGE_PATH} ${EXTRA_FLAGS} ${EXTRA_MUSL_FLAGS} ${WARNINGS_AS_ERRORS}
         
   wasm:
     if: ${{ !(github.event.pull_request.draft || false) && inputs.with_wasm }}
     runs-on: ubuntu-latest
-    container: swift:6.1.0-noble
+    container: swift:6.2.0-noble
     timeout-minutes: 30
     steps:
       - name: Check out code
@@ -331,7 +343,13 @@ jobs:
           version="$(swiftc --version | head -n1)"
           tag="$(curl -sL "https://raw.githubusercontent.com/swiftwasm/swift-sdk-index/refs/heads/main/v1/tag-by-version.json" | jq -e -r --arg v "$version" '.[$v] | .[-1]')"
           curl -sL "https://raw.githubusercontent.com/swiftwasm/swift-sdk-index/refs/heads/main/v1/builds/$tag.json" | jq -r '.["swift-sdks"]["wasm32-unknown-wasip1-threads"] | "swift sdk install \"\(.url)\" --checksum \"\(.checksum)\""' | sh -x
+      - name: Check Swift compatibility
+        id: swift-check
+        uses: vapor/ci/.github/actions/check-compatible-swift@main
+        with:
+          package_root: ${{ inputs.package_root }}
       - name: Build
+        if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
         run: swift build --swift-sdk wasm32-unknown-wasip1-threads ${PACKAGE_PATH} ${EXTRA_FLAGS} ${WARNINGS_AS_ERRORS}
 
   android-unit:
@@ -341,12 +359,22 @@ jobs:
       matrix:
         swift-version:
           - 6.1
+          - 6.2
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
+      - name: Ensure zstd is available
+        run: sudo apt-get update -yq && sudo apt-get install -yq zstd
       - name: Check out code
         uses: actions/checkout@v5
+      - name: Check Swift compatibility
+        id: swift-check
+        uses: vapor/ci/.github/actions/check-compatible-swift@main
+        with:
+          package_root: ${{ inputs.package_root }}
+          assume-installed-version: ${{ matrix.swift-version }}
       - name: Run unit tests
+        if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
         uses: skiptools/swift-android-action@v2
         with:
           swift-version: ${{ matrix.swift-version }}
