@@ -96,7 +96,7 @@ jobs:
           github-token: ${{ steps.create-penny-token.outputs.token }}
 
       - name: Check out code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: "${{ steps.commit-info.outputs.ref }}"
           fetch-depth: 0
