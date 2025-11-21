@@ -115,7 +115,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Check out code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with: { 'fetch-depth': 0 }
       - name: Run API breakage check
         run: |
@@ -140,7 +140,7 @@ jobs:
         run: apt-get update -yq && apt-get install -y curl
       - name: Check out code
         if: ${{ matrix.swift-config.build-mode == 'debug' || inputs.with_release_mode_testing }}
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Check Swift compatibility
         id: swift-check
         if: ${{ matrix.swift-config.build-mode == 'debug' || inputs.with_release_mode_testing }}
@@ -189,7 +189,7 @@ jobs:
         with:
           xcode-version: ${{ matrix.xcode-version }}
       - name: Check out code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Check Swift compatibility
         id: swift-check
         uses: vapor/ci/.github/actions/check-compatible-swift@main
@@ -235,7 +235,7 @@ jobs:
           swift-build: ${{ matrix.swift-tag }}
           update-sdk-modules: true
       - name: Check out code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Check Swift compatibility
         id: swift-check
         uses: vapor/ci/.github/actions/check-compatible-swift@main
@@ -256,7 +256,7 @@ jobs:
         with:
           xcode-version: latest-stable
       - name: Check out code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Run iOS Tests
         run: |
           name="$(xcrun simctl list -j -e devices | jq -r '[.devices | to_entries[] | select(.key | contains(".iOS-"))] | sort_by(.key) | last | .value | first | .name')"
@@ -272,7 +272,7 @@ jobs:
       - name: Configure git
         run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Check out code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Read config file
         # if .swift-format is not provided in the repo, use the default config file from CI
         run: |
@@ -293,7 +293,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Check out code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Install SDK
         run: swift sdk install https://download.swift.org/swift-6.2-release/static-sdk/swift-6.2-RELEASE/swift-6.2-RELEASE_static-linux-0.0.1.artifactbundle.tar.gz --checksum d2225840e592389ca517bbf71652f7003dbf45ac35d1e57d98b9250368769378
       - name: Check Swift compatibility
@@ -312,7 +312,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Check out code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       # NOTE: Portions of this workflow are adapted from
       # https://github.com/apple/swift-nio/pull/3159/
       - name: Install linux dependencies
@@ -345,7 +345,7 @@ jobs:
       - name: Ensure zstd is available
         run: sudo apt-get update -yq && sudo apt-get install -yq zstd
       - name: Check out code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Check Swift compatibility
         id: swift-check
         uses: vapor/ci/.github/actions/check-compatible-swift@main
