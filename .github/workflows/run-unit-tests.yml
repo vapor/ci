@@ -92,6 +92,11 @@ on:
         required: false
         default: 'test'
         description: "Action to pass to xcodebuild when running iOS tests. Defaults to 'test'. Set to '' to just compile and not run tests."
+      enable_all_traits:
+        type: boolean
+        required: false
+        default: true
+        description: "Set to 'false' to enable only default traits when running tests. Defaults to 'true'"
     secrets:
       CODECOV_TOKEN:
         required: false
@@ -106,6 +111,7 @@ env:
   WITH_COVERAGE: ${{ inputs.with_coverage && '--enable-code-coverage' || '' }}
   IOS_SCHEME_NAME: ${{ inputs.ios_scheme_name }}
   IOS_XCODEBUILD_ACTION: ${{ inputs.ios_xcodebuild_action }}
+  ENABLE_ALL_TRAITS: ${{ inputs.enable_all_traits && '--enable-all-traits' || '' }}
 
 jobs:
   api-breakage:
@@ -162,6 +168,7 @@ jobs:
             ${WARNINGS_AS_ERRORS} \
             ${WITH_COVERAGE} \
             ${TEST_FILTER} \
+            ${ENABLE_ALL_TRAITS} \
             ${EXTRA_FLAGS}
       - name: Upload coverage data
         if: ${{ inputs.with_coverage && (steps.swift-check.outputs.swift-compatible == 'true') && (matrix.swift-config.build-mode == 'debug' || inputs.with_release_mode_testing) }}
@@ -203,6 +210,7 @@ jobs:
             ${WITH_TSAN} \
             ${WITH_COVERAGE} \
             ${TEST_FILTER} \
+            ${ENABLE_ALL_TRAITS} \
             ${EXTRA_FLAGS}
       - name: Upload coverage data
         if: ${{ (steps.swift-check.outputs.swift-compatible == 'true') && inputs.with_coverage }}
@@ -304,7 +312,7 @@ jobs:
       - name: Build
         if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
         run: swift build --swift-sdk x86_64-swift-linux-musl ${PACKAGE_PATH} ${EXTRA_FLAGS} ${EXTRA_MUSL_FLAGS} ${WARNINGS_AS_ERRORS}
-        
+
   wasm:
     if: ${{ !(github.event.pull_request.draft || false) && inputs.with_wasm }}
     runs-on: ubuntu-latest
