@@ -95,8 +95,13 @@ on:
       enable_all_traits:
         type: boolean
         required: false
-        default: true
-        description: "Set to 'false' to enable only default traits when running tests. Defaults to 'true'"
+        default: false
+        description: "Set to 'false' to enable only default traits when running tests. When true, overrides `disable_default_traits`. Defaults to 'false'."
+      disable_default_traits:
+        type: boolean
+        required: false
+        default: false
+        description: "Set to 'true' to disable default traits when running tests. Defaults to 'false'."
     secrets:
       CODECOV_TOKEN:
         required: false
@@ -112,6 +117,7 @@ env:
   IOS_SCHEME_NAME: ${{ inputs.ios_scheme_name }}
   IOS_XCODEBUILD_ACTION: ${{ inputs.ios_xcodebuild_action }}
   ENABLE_ALL_TRAITS: ${{ inputs.enable_all_traits && '--enable-all-traits' || '' }}
+  DISABLE_DEFAULT_TRAITS: ${{ inputs.disable_default_traits && '--disable-default-traits' || '' }}
 
 jobs:
   api-breakage:
@@ -169,6 +175,7 @@ jobs:
             ${WITH_COVERAGE} \
             ${TEST_FILTER} \
             ${ENABLE_ALL_TRAITS} \
+            ${DISABLE_DEFAULT_TRAITS} \
             ${EXTRA_FLAGS}
       - name: Upload coverage data
         if: ${{ inputs.with_coverage && (steps.swift-check.outputs.swift-compatible == 'true') && (matrix.swift-config.build-mode == 'debug' || inputs.with_release_mode_testing) }}
@@ -211,6 +218,7 @@ jobs:
             ${WITH_COVERAGE} \
             ${TEST_FILTER} \
             ${ENABLE_ALL_TRAITS} \
+            ${DISABLE_DEFAULT_TRAITS} \
             ${EXTRA_FLAGS}
       - name: Upload coverage data
         if: ${{ (steps.swift-check.outputs.swift-compatible == 'true') && inputs.with_coverage }}
@@ -255,6 +263,7 @@ jobs:
           $params = @(); 
           $params += ($env:WARNINGS_AS_ERRORS -split ' '); 
           $params += ($env:ENABLE_ALL_TRAITS -split ' ');
+          $params += ($env:DISABLE_DEFAULT_TRAITS -split ' ');
           $params += ($env:EXTRA_FLAGS -split ' ')
           swift test $env:PACKAGE_ROOT $env:TEST_FILTER @params
 
@@ -314,7 +323,7 @@ jobs:
           package_root: ${{ inputs.package_root }}
       - name: Build
         if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
-        run: swift build --swift-sdk x86_64-swift-linux-musl ${PACKAGE_PATH} ${EXTRA_FLAGS} ${EXTRA_MUSL_FLAGS} ${WARNINGS_AS_ERRORS} ${ENABLE_ALL_TRAITS}
+        run: swift build --swift-sdk x86_64-swift-linux-musl ${PACKAGE_PATH} ${EXTRA_FLAGS} ${EXTRA_MUSL_FLAGS} ${WARNINGS_AS_ERRORS} ${ENABLE_ALL_TRAITS} ${DISABLE_DEFAULT_TRAITS}
 
   wasm:
     if: ${{ !(github.event.pull_request.draft || false) && inputs.with_wasm }}
@@ -340,7 +349,7 @@ jobs:
           package_root: ${{ inputs.package_root }}
       - name: Build
         if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
-        run: swift build --swift-sdk wasm32-unknown-wasip1-threads ${PACKAGE_PATH} ${EXTRA_FLAGS} ${WARNINGS_AS_ERRORS} ${ENABLE_ALL_TRAITS}
+        run: swift build --swift-sdk wasm32-unknown-wasip1-threads ${PACKAGE_PATH} ${EXTRA_FLAGS} ${WARNINGS_AS_ERRORS} ${ENABLE_ALL_TRAITS} ${DISABLE_DEFAULT_TRAITS}
 
   android-unit:
     if: ${{ !(github.event.pull_request.draft || false) && inputs.with_android }}
@@ -369,4 +378,4 @@ jobs:
         with:
           swift-version: ${{ matrix.swift-version }}
           copy-files: ${{ inputs.android_copy_files }}
-          swift-test-flags: ${{ env.ENABLE_ALL_TRAITS }}
+          swift-test-flags: ${{ env.ENABLE_ALL_TRAITS }} ${{ env.DISABLE_DEFAULT_TRAITS }}
