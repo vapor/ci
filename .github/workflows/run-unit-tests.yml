@@ -252,7 +252,10 @@ jobs:
       - name: Run unit tests
         if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
         run: |
-          $params = @(); $params += ($env:WARNINGS_AS_ERRORS -split ' '); $params += ($env:EXTRA_FLAGS -split ' ')
+          $params = @(); 
+          $params += ($env:WARNINGS_AS_ERRORS -split ' '); 
+          $params += ($env:ENABLE_ALL_TRAITS -split ' ');
+          $params += ($env:EXTRA_FLAGS -split ' ')
           swift test $env:PACKAGE_ROOT $env:TEST_FILTER @params
 
   ios-unit:
@@ -311,7 +314,7 @@ jobs:
           package_root: ${{ inputs.package_root }}
       - name: Build
         if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
-        run: swift build --swift-sdk x86_64-swift-linux-musl ${PACKAGE_PATH} ${EXTRA_FLAGS} ${EXTRA_MUSL_FLAGS} ${WARNINGS_AS_ERRORS}
+        run: swift build --swift-sdk x86_64-swift-linux-musl ${PACKAGE_PATH} ${EXTRA_FLAGS} ${EXTRA_MUSL_FLAGS} ${WARNINGS_AS_ERRORS} ${ENABLE_ALL_TRAITS}
 
   wasm:
     if: ${{ !(github.event.pull_request.draft || false) && inputs.with_wasm }}
@@ -337,7 +340,7 @@ jobs:
           package_root: ${{ inputs.package_root }}
       - name: Build
         if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
-        run: swift build --swift-sdk wasm32-unknown-wasip1-threads ${PACKAGE_PATH} ${EXTRA_FLAGS} ${WARNINGS_AS_ERRORS}
+        run: swift build --swift-sdk wasm32-unknown-wasip1-threads ${PACKAGE_PATH} ${EXTRA_FLAGS} ${WARNINGS_AS_ERRORS} ${ENABLE_ALL_TRAITS}
 
   android-unit:
     if: ${{ !(github.event.pull_request.draft || false) && inputs.with_android }}
@@ -366,3 +369,4 @@ jobs:
         with:
           swift-version: ${{ matrix.swift-version }}
           copy-files: ${{ inputs.android_copy_files }}
+          swift-test-flags: ${{ env.ENABLE_ALL_TRAITS }}
