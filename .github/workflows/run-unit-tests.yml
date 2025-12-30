@@ -70,8 +70,8 @@ on:
       with_disabled_traits:
         type: boolean
         required: false
-        default: true
-        description: "Set to 'true' to run tests with default traits disabled. Defaults to 'true'."
+        default: false
+        description: "Set to 'true' to run tests with default traits disabled. Defaults to 'false'."
       android_copy_files:
         type: string
         required: false
