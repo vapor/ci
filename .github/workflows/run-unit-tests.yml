@@ -67,6 +67,11 @@ on:
         required: false
         default: false
         description: "Set to 'true' to run tests against an Android emulator. Defaults to 'false'."
+      with_disabled_traits:
+        type: boolean
+        required: false
+        default: true
+        description: "Set to 'true' to run tests with default traits disabled. Defaults to 'true'."
       android_copy_files:
         type: string
         required: false
@@ -96,12 +101,7 @@ on:
         type: boolean
         required: false
         default: false
-        description: "Set to 'false' to enable only default traits when running tests. When true, overrides `disable_default_traits`. Defaults to 'false'."
-      disable_default_traits:
-        type: boolean
-        required: false
-        default: false
-        description: "Set to 'true' to disable default traits when running tests. Defaults to 'false'."
+        description: "Set to 'false' to enable only default traits when running tests. Defaults to 'false'. Doesn't have any effect on the disabled-traits-unit job."
     secrets:
       CODECOV_TOKEN:
         required: false
@@ -117,7 +117,6 @@ env:
   IOS_SCHEME_NAME: ${{ inputs.ios_scheme_name }}
   IOS_XCODEBUILD_ACTION: ${{ inputs.ios_xcodebuild_action }}
   ENABLE_ALL_TRAITS: ${{ inputs.enable_all_traits && '--enable-all-traits' || '' }}
-  DISABLE_DEFAULT_TRAITS: ${{ inputs.disable_default_traits && '--disable-default-traits' || '' }}
 
 jobs:
   api-breakage:
@@ -175,7 +174,6 @@ jobs:
             ${WITH_COVERAGE} \
             ${TEST_FILTER} \
             ${ENABLE_ALL_TRAITS} \
-            ${DISABLE_DEFAULT_TRAITS} \
             ${EXTRA_FLAGS}
       - name: Upload coverage data
         if: ${{ inputs.with_coverage && (steps.swift-check.outputs.swift-compatible == 'true') && (matrix.swift-config.build-mode == 'debug' || inputs.with_release_mode_testing) }}
@@ -218,7 +216,6 @@ jobs:
             ${WITH_COVERAGE} \
             ${TEST_FILTER} \
             ${ENABLE_ALL_TRAITS} \
-            ${DISABLE_DEFAULT_TRAITS} \
             ${EXTRA_FLAGS}
       - name: Upload coverage data
         if: ${{ (steps.swift-check.outputs.swift-compatible == 'true') && inputs.with_coverage }}
@@ -263,7 +260,6 @@ jobs:
           $params = @(); 
           $params += ($env:WARNINGS_AS_ERRORS -split ' '); 
           $params += ($env:ENABLE_ALL_TRAITS -split ' ');
-          $params += ($env:DISABLE_DEFAULT_TRAITS -split ' ');
           $params += ($env:EXTRA_FLAGS -split ' ')
           swift test $env:PACKAGE_ROOT $env:TEST_FILTER @params
 
@@ -323,7 +319,7 @@ jobs:
           package_root: ${{ inputs.package_root }}
       - name: Build
         if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
-        run: swift build --swift-sdk x86_64-swift-linux-musl ${PACKAGE_PATH} ${EXTRA_FLAGS} ${EXTRA_MUSL_FLAGS} ${WARNINGS_AS_ERRORS} ${ENABLE_ALL_TRAITS} ${DISABLE_DEFAULT_TRAITS}
+        run: swift build --swift-sdk x86_64-swift-linux-musl ${PACKAGE_PATH} ${EXTRA_FLAGS} ${EXTRA_MUSL_FLAGS} ${WARNINGS_AS_ERRORS} ${ENABLE_ALL_TRAITS}
 
   wasm:
     if: ${{ !(github.event.pull_request.draft || false) && inputs.with_wasm }}
@@ -378,4 +374,30 @@ jobs:
         with:
           swift-version: ${{ matrix.swift-version }}
           copy-files: ${{ inputs.android_copy_files }}
-          swift-test-flags: ${{ env.ENABLE_ALL_TRAITS }} ${{ env.DISABLE_DEFAULT_TRAITS }}
+          swift-test-flags: ${{ env.ENABLE_ALL_TRAITS }}
+
+  disabled-traits-unit:
+    if: ${{ !(github.event.pull_request.draft || false) && inputs.with_disabled_traits }}
+    runs-on: ubuntu-latest
+    container: swift:6.2.0-noble
+    timeout-minutes: 30
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+      # NOTE: Portions of this workflow are adapted from
+      # https://github.com/apple/swift-nio/pull/3159/
+      - name: Install linux dependencies
+        run: apt-get update -y -q && apt-get install -y -q curl && apt-get install -y -q jq
+      - name: Install SDK
+        run: |
+          version="$(swiftc --version | head -n1)"
+          tag="$(curl -sL "https://raw.githubusercontent.com/swiftwasm/swift-sdk-index/refs/heads/main/v1/tag-by-version.json" | jq -e -r --arg v "$version" '.[$v] | .[-1]')"
+          curl -sL "https://raw.githubusercontent.com/swiftwasm/swift-sdk-index/refs/heads/main/v1/builds/$tag.json" | jq -r '.["swift-sdks"]["wasm32-unknown-wasip1-threads"] | "swift sdk install \"\(.url)\" --checksum \"\(.checksum)\""' | sh -x
+      - name: Check Swift compatibility
+        id: swift-check
+        uses: vapor/ci/.github/actions/check-compatible-swift@main
+        with:
+          package_root: ${{ inputs.package_root }}
+      - name: Build
+        if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
+        run: swift build --swift-sdk wasm32-unknown-wasip1-threads ${PACKAGE_PATH} --disable-default-traits ${EXTRA_FLAGS} ${WARNINGS_AS_ERRORS}
