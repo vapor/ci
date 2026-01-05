@@ -370,3 +370,4 @@ jobs:
           swift-version: ${{ matrix.swift-version }}
           copy-files: ${{ inputs.android_copy_files }}
           swift-test-flags: ${{ env.ENABLE_ALL_TRAITS }}
+          free-disk-space: true
