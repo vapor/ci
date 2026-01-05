@@ -16,7 +16,7 @@ let package = Package(
     ],
     traits: [
         .trait(name: "SampleTrait"),
-        .default(enabledTraits: ["SampleTrait"])
+        .default(enabledTraits: ["SampleTrait"]),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-log.git", from: "1.5.0")
