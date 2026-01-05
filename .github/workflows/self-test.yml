@@ -48,11 +48,6 @@ on:
         required: false
         default: 'sample-testable-package-Package'
         description: "Set to the scheme name in Xcode to run tests on iOS. Defaults to 'sample-testable-package', use '' to not run any tests."
-      with_disabled_traits:
-        type: boolean
-        required: false
-        default: true
-        description: "Set to 'true' to run tests with default traits disabled. Defaults to 'true'."
   pull_request: { branches: [ main ] }
   push: { branches: [ main ] }
 concurrency:
@@ -73,5 +68,4 @@ jobs:
       with_musl: ${{ inputs.with_platform == 'all' || inputs.with_platform == 'musl' || true }}
       with_wasm: ${{ inputs.with_platform == 'all' || inputs.with_platform == 'wasm' || true }}
       with_android: ${{ inputs.with_platform == 'all' || inputs.with_platform == 'android'|| true }}
-      with_disabled_traits: ${{ inputs.with_disabled_traits || false }}
       ios_scheme_name: ${{ inputs.ios_scheme_name || 'sample-testable-package-Package' }}
