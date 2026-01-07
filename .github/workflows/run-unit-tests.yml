@@ -306,14 +306,13 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v6
       - name: Install linux dependencies
-        run: apt-get update -y -q && apt-get install -y -q curl && apt-get install -y -q jq
+        run: apt-get update && apt-get install -y curl jq
       - name: Install SDK
         run: |
-          tag="$(swiftc --version | head -n1 | awk -F'[()]' '{print $2}')"
-          tag_lower="$(echo "$tag" | tr '[:upper:]' '[:lower:]')"
-          release_info="$(curl -s https://www.swift.org/api/v1/install/releases.json | jq -r --arg ver "$tag" '.[] | select(.tag == $ver)')"
-          checksum="$(echo "$release_info" | jq -r --arg platform "static-sdk" '.platforms[] | select(.platform == $platform) | .checksum // empty')"
-          swift sdk install https://download.swift.org/$tag_lower/static-sdk/$tag/"$tag"_static-linux-0.0.1.artifactbundle.tar.gz --checksum $checksum
+          tag="$(swiftc --version | grep -Po '(?<=\().+(?=\))')"
+          cheksum="$(curl -s https://www.swift.org/api/v1/install/releases.json | \
+            jq -r --arg tag "$tag" '.[] | select(.tag == $tag).platforms[] | select(.platform == "static-sdk").checksum // empty')"
+          swift sdk install https://download.swift.org/$(echo $tag | tr [A-Z] [a-z])/static-sdk/$tag/"$tag"_static-linux-0.0.1.artifactbundle.tar.gz --checksum $checksum
       - name: Check Swift compatibility
         id: swift-check
         uses: vapor/ci/.github/actions/check-compatible-swift@main
@@ -334,7 +333,7 @@ jobs:
       # NOTE: Portions of this workflow are adapted from
       # https://github.com/apple/swift-nio/pull/3159/
       - name: Install linux dependencies
-        run: apt-get update -y -q && apt-get install -y -q curl && apt-get install -y -q jq
+        run: apt-get update -y -q && apt-get install -y -q curl jq
       - name: Install SDK
         run: |
           version="$(swiftc --version | head -n1)"
