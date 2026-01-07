@@ -305,8 +305,14 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v6
+      - name: Install linux dependencies
+        run: apt-get update -y -q && apt-get install -y -q curl && apt-get install -y -q jq
       - name: Install SDK
-        run: swift sdk install https://download.swift.org/swift-6.2.3-release/static-sdk/swift-6.2.3-RELEASE/swift-6.2.3-RELEASE_static-linux-0.0.1.artifactbundle.tar.gz --checksum f30ec724d824ef43b5546e02ca06a8682dafab4b26a99fbb0e858c347e507a2c
+        run: |
+          tag="$(swiftc --version | awk -F'[()]' 'NR==1 { print $2 }')"
+          release_info="$(curl -s https://www.swift.org/api/v1/install/releases.json | jq -r --arg ver "$tag" '.[] | select(.tag == $ver)')"
+          checksum="$(echo "$release_info" | jq -r --arg platform "static-sdk" '.platforms[] | select(.platform == $platform) | .checksum // empty')"
+          swift sdk install https://download.swift.org/${tag,,}/static-sdk/$tag/"$tag"_static-linux-0.0.1.artifactbundle.tar.gz --checksum $checksum
       - name: Check Swift compatibility
         id: swift-check
         uses: vapor/ci/.github/actions/check-compatible-swift@main
