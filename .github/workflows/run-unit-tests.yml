@@ -310,7 +310,7 @@ jobs:
       - name: Install SDK
         run: |
           tag="$(swiftc --version | grep -Po '(?<=\().+(?=\))')"
-          cheksum="$(curl -s https://www.swift.org/api/v1/install/releases.json | \
+          checksum="$(curl -s https://www.swift.org/api/v1/install/releases.json | \
             jq -r --arg tag "$tag" '.[] | select(.tag == $tag).platforms[] | select(.platform == "static-sdk").checksum // empty')"
           swift sdk install https://download.swift.org/$(echo $tag | tr [A-Z] [a-z])/static-sdk/$tag/"$tag"_static-linux-0.0.1.artifactbundle.tar.gz --checksum $checksum
       - name: Check Swift compatibility
