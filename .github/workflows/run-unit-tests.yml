@@ -5,12 +5,12 @@ on:
       package_root:
         type: string
         required: false
-        default: ''
+        default: ""
         description: "Specifies a subpath of the checkout to run tests and upload coverage from."
       test_filter:
         type: string
         required: false
-        default: ''
+        default: ""
         description: "Apply a --filter to the tests that will be run."
       with_testing:
         type: boolean
@@ -70,27 +70,27 @@ on:
       android_copy_files:
         type: string
         required: false
-        default: ''
+        default: ""
         description: "A list of files to copy to the test context when running Android tests. Defaults to none."
       ios_scheme_name:
         type: string
         required: false
-        default: ''
+        default: ""
         description: "Set to the scheme name in Xcode to run tests on iOS. Defaults to '' which won't run any tests."
       extra_flags:
         type: string
         required: false
-        default: ''
+        default: ""
         description: "Additional 'swift test' flags to be applied on when testing on all platforms."
       extra_musl_flags:
         type: string
         required: false
-        default: ''
+        default: ""
         description: "Additional 'swift build' flags to be applied on when compiling with MUSL."
       ios_xcodebuild_action:
         type: string
         required: false
-        default: 'test'
+        default: "test"
         description: "Action to pass to xcodebuild when running iOS tests. Defaults to 'test'. Set to '' to just compile and not run tests."
       enable_all_traits:
         type: boolean
@@ -103,11 +103,11 @@ on:
 env:
   WITH_TESTING: ${{ inputs.with_testing && '-Xswiftc -enable-testing' || '' }}
   PACKAGE_ROOT: ${{ inputs.package_root != '' && format('--package-path={0}', inputs.package_root) || '' }}
-  EXTRA_FLAGS:  ${{ inputs.extra_flags || '--explicit-target-dependency-import-check error -Xswiftc -require-explicit-sendable' }}
+  EXTRA_FLAGS: ${{ inputs.extra_flags || '--explicit-target-dependency-import-check error -Xswiftc -require-explicit-sendable' }}
   EXTRA_MUSL_FLAGS: ${{ inputs.extra_musl_flags }}
   WITH_TSAN: ${{ inputs.with_tsan && '--sanitize=thread' || '' }}
   WARNINGS_AS_ERRORS: ${{ inputs.warnings_as_errors && '-Xswiftc -warnings-as-errors' || '' }}
-  TEST_FILTER:  ${{ inputs.test_filter != '' && format('--filter={0}', inputs.test_filter) || '' }}
+  TEST_FILTER: ${{ inputs.test_filter != '' && format('--filter={0}', inputs.test_filter) || '' }}
   WITH_COVERAGE: ${{ inputs.with_coverage && '--enable-code-coverage' || '' }}
   IOS_SCHEME_NAME: ${{ inputs.ios_scheme_name }}
   IOS_XCODEBUILD_ACTION: ${{ inputs.ios_xcodebuild_action }}
@@ -122,7 +122,7 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v6
-        with: { 'fetch-depth': 0 }
+        with: { "fetch-depth": 0 }
       - name: Run API breakage check
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
@@ -174,8 +174,8 @@ jobs:
         if: ${{ inputs.with_coverage && (steps.swift-check.outputs.swift-compatible == 'true') && (matrix.swift-config.build-mode == 'debug' || inputs.with_release_mode_testing) }}
         uses: vapor/swift-codecov-action@v0.3
         with:
-          codecov_token:    ${{ secrets.CODECOV_TOKEN || '' }}
-          package_path:     ${{ inputs.package_root }}
+          codecov_token: ${{ secrets.CODECOV_TOKEN || '' }}
+          package_path: ${{ inputs.package_root }}
           build_parameters: -c ${{ matrix.swift-config.build-mode }} ${{ env.EXTRA_FLAGS }}
 
   macos-unit:
@@ -216,8 +216,8 @@ jobs:
         if: ${{ (steps.swift-check.outputs.swift-compatible == 'true') && inputs.with_coverage }}
         uses: vapor/swift-codecov-action@v0.3
         with:
-          codecov_token:    ${{ secrets.CODECOV_TOKEN || '' }}
-          package_path:     ${{ inputs.package_root }}
+          codecov_token: ${{ secrets.CODECOV_TOKEN || '' }}
+          package_path: ${{ inputs.package_root }}
           build_parameters: -c debug ${{ env.EXTRA_FLAGS }}
 
   windows-unit:
@@ -230,9 +230,21 @@ jobs:
           - 6.1
           - 6.2
         include:
-          - { swift-version: 6.0, swift-branch: swift-6.0.3-release, swift-tag: 6.0.3-RELEASE }
-          - { swift-version: 6.1, swift-branch: swift-6.1.3-release, swift-tag: 6.1.3-RELEASE }
-          - { swift-version: 6.2, swift-branch: swift-6.2-release, swift-tag: 6.2-RELEASE }
+          - {
+              swift-version: 6.0,
+              swift-branch: swift-6.0.3-release,
+              swift-tag: 6.0.3-RELEASE,
+            }
+          - {
+              swift-version: 6.1,
+              swift-branch: swift-6.1.3-release,
+              swift-tag: 6.1.3-RELEASE,
+            }
+          - {
+              swift-version: 6.2,
+              swift-branch: swift-6.2-release,
+              swift-tag: 6.2-RELEASE,
+            }
     runs-on: windows-latest
     timeout-minutes: 60
     steps:
@@ -252,8 +264,8 @@ jobs:
       - name: Run unit tests
         if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
         run: |
-          $params = @(); 
-          $params += ($env:WARNINGS_AS_ERRORS -split ' '); 
+          $params = @();
+          $params += ($env:WARNINGS_AS_ERRORS -split ' ');
           $params += ($env:ENABLE_ALL_TRAITS -split ' ');
           $params += ($env:EXTRA_FLAGS -split ' ')
           swift test $env:PACKAGE_ROOT $env:TEST_FILTER @params
@@ -336,9 +348,10 @@ jobs:
         run: apt-get update -y -q && apt-get install -y -q curl jq
       - name: Install SDK
         run: |
-          version="$(swiftc --version | head -n1)"
-          tag="$(curl -sL "https://raw.githubusercontent.com/swiftwasm/swift-sdk-index/refs/heads/main/v1/tag-by-version.json" | jq -e -r --arg v "$version" '.[$v] | .[-1]')"
-          curl -sL "https://raw.githubusercontent.com/swiftwasm/swift-sdk-index/refs/heads/main/v1/builds/$tag.json" | jq -r '.["swift-sdks"]["wasm32-unknown-wasip1-threads"] | "swift sdk install \"\(.url)\" --checksum \"\(.checksum)\""' | sh -x
+          tag="$(swiftc --version | grep -Po '(?<=\().+(?=\))')"
+          checksum="$(curl -s https://www.swift.org/api/v1/install/releases.json | \
+            jq -r --arg tag "$tag" '.[] | select(.tag == $tag).platforms[] | select(.platform == "wasm-sdk").checksum // empty')"
+          swift sdk install https://download.swift.org/$(echo $tag | tr [A-Z] [a-z])/wasm-sdk/$tag/"$tag"_wasm.artifactbundle.tar.gz --checksum $checksum
       - name: Check Swift compatibility
         id: swift-check
         uses: vapor/ci/.github/actions/check-compatible-swift@main
