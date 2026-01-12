@@ -153,10 +153,25 @@ jobs:
         uses: vapor/ci/.github/actions/check-compatible-swift@main
         with:
           package_root: ${{ inputs.package_root }}
+      # actions/cache will detect zstd and will become much faster.
+      - name: Install zstd
+        if: ${{ (steps.swift-check.outputs.swift-compatible == 'true') && (matrix.swift-config.build-mode == 'debug' || inputs.with_release_mode_testing) }}
+        run: |
+          apt-get update -y
+          apt-get install -y zstd
       - name: Strip flags incompatible with 6.0
         if: ${{ matrix.swift-config.image == 'swift:6.0-noble' && steps.swift-check.outputs.swift-compatible == 'true' && (matrix.swift-config.build-mode == 'debug' || inputs.with_release_mode_testing) }}
         shell: bash
         run: 'echo "EXTRA_FLAGS=$(echo "${EXTRA_FLAGS}" | sed -Ee "s/--(dis|en)able-experimental-prebuilts//g")" >>"${GITHUB_ENV}"'
+      - name: Restore .build
+        # If this step is restoring malformed data, use 'Enable debug logging' on a re-run to disable the step.
+        if: ${{ (runner.debug != '1') && (steps.swift-check.outputs.swift-compatible == 'true') && (matrix.swift-config.build-mode == 'debug' || inputs.with_release_mode_testing) }}
+        id: "restore-cache"
+        uses: actions/cache/restore@v4
+        with:
+          path: .build
+          key: "${{ matrix.swift-config.image }}-${{ matrix.swift-config.build-mode }}-build-${{ runner.os }}-${{ github.event.pull_request.base.sha || github.event.after }}"
+          restore-keys: "${{ matrix.swift-config.image }}-${{ matrix.swift-config.build-mode }}-build-${{ runner.os }}-"
       - name: Run unit tests
         if: ${{ steps.swift-check.outputs.swift-compatible == 'true' && (matrix.swift-config.build-mode == 'debug' || inputs.with_release_mode_testing) }}
         run: |
@@ -170,6 +185,12 @@ jobs:
             ${TEST_FILTER} \
             ${ENABLE_ALL_TRAITS} \
             ${EXTRA_FLAGS}
+      - name: Cache .build
+        if: ${{ (steps.restore-cache.outputs.cache-hit != 'true') && (steps.swift-check.outputs.swift-compatible == 'true') && (matrix.swift-config.build-mode == 'debug' || inputs.with_release_mode_testing) }}
+        uses: actions/cache/save@v4
+        with:
+          path: .build
+          key: "${{ matrix.swift-config.image }}-${{ matrix.swift-config.build-mode }}-build-${{ runner.os }}-${{ github.event.pull_request.base.sha || github.event.after }}"
       - name: Upload coverage data
         if: ${{ inputs.with_coverage && (steps.swift-check.outputs.swift-compatible == 'true') && (matrix.swift-config.build-mode == 'debug' || inputs.with_release_mode_testing) }}
         uses: vapor/swift-codecov-action@v0.3
