@@ -21,6 +21,11 @@ jobs:
     # https://runs-on.com/features/custom-runners/
     runs-on: runs-on=${{ github.run_id }}/runner=2cpu-4ram
     container: swift:noble
+    
+    env:
+      GITHUB_REPO: ${{ github.repository }}
+      GITHUB_REF: ${{ github.ref }}
+      GITHUB_REFNAME: ${{ github.ref_name }}
 
     defaults:
       run:
@@ -42,12 +47,12 @@ jobs:
           INPUT_SHA: ${{ inputs.sha }}
         run: |
           if [[ -n "${INPUT_SHA}" ]]; then
-            FULL_SHA="$(curl "https://api.github.com/repos/${{ github.repository }}/commits/${INPUT_SHA}" | jq -r '.sha')"
+            FULL_SHA="$(curl "https://api.github.com/repos/${GITHUB_REPO}/commits/${INPUT_SHA}" | jq -r '.sha')"
 
             # Get the oldest PR that contains the commit
             PR="$(
               curl "https://api.github.com/search/issues?q=${FULL_SHA}" | \
-                jq 'select(.items[].pull_request.url | contains("/${{ github.repository }}/")) | .items[-1]'
+                jq 'select(.items[].pull_request.url | contains("/${GITHUB_REPO}/")) | .items[-1]'
             )"
 
             # PR title, removing all occurrences of `'`
@@ -64,14 +69,14 @@ jobs:
             echo "title=${PR_TITLE}" >> "${GITHUB_OUTPUT}"
             echo "pr_number=${PR_NUMBER}" >> "${GITHUB_OUTPUT}"
             SHORT_NAME="$(echo "${FULL_SHA}" | cut -c 1-7)"
-            FILES_LINK="https://github.com/${{ github.repository }}/pull/${PR_NUMBER}/commits/${FULL_SHA}"
+            FILES_LINK="https://github.com/${GITHUB_REPO}/pull/${PR_NUMBER}/commits/${FULL_SHA}"
           else
-            echo 'ref=${{ github.ref }}' >> "${GITHUB_OUTPUT}"
+            echo "ref=${GITHUB_REF}" >> "${GITHUB_OUTPUT}"
             echo "sha=${GITHUB_SHA}" >> "${GITHUB_OUTPUT}"
-            echo 'title=${{ github.ref_name }}' >> "${GITHUB_OUTPUT}"
+            echo "title=${GITHUB_REFNAME}" >> "${GITHUB_OUTPUT}"
             echo 'pr_number=' >> "${GITHUB_OUTPUT}"
-            SHORT_NAME='${{ github.ref_name }}'
-            FILES_LINK="https://github.com/${{ github.repository }}/commit/${GITHUB_SHA}"
+            SHORT_NAME="${GITHUB_REFNAME}"
+            FILES_LINK="https://github.com/${GITHUB_REPO}/commit/${GITHUB_SHA}"
           fi
 
           echo "md_link=[${SHORT_NAME}](${FILES_LINK})" >> "${GITHUB_OUTPUT}"
@@ -208,6 +213,7 @@ jobs:
         env:
           STATUS: ${{ steps.comparison.outputs.exit-status }}
           SHA: ${{ steps.commit-info.outputs.sha }}
+          TOKEN: ${{ steps.create-penny-token.outputs.token }}
         run: |
           STATE=$([ "${STATUS}" == '0' ] && echo 'success' || echo 'failure')
           BODY="$(
@@ -220,10 +226,12 @@ jobs:
           curl -L \
             -X POST \
             -H 'Accept: application/vnd.github+json' \
-            -H 'Authorization: Bearer ${{ steps.create-penny-token.outputs.token }}' \
+            -H "Authorization: Bearer ${TOKEN}" \
             -H 'X-GitHub-Api-Version: 2022-11-28' \
-            "https://api.github.com/repos/${{ github.repository }}/statuses/${SHA}" \
+            "https://api.github.com/repos/${GITHUB_REPO}/statuses/${SHA}" \
             -d "${BODY}"
 
       - name: Exit with correct status
-        run: exit ${{ steps.comparison.outputs.exit-status }}
+        env:
+          STATUS: ${{ steps.comparison.outputs.exit-status }}
+        run: exit "${STATUS}"
