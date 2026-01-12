@@ -9,7 +9,9 @@ on:
         type: string
         required: false
         description: "The commit SHA to run the benchmarks against. Will use current ref if not provided."
-
+permissions:
+  contents: read
+  id-token: write
 env:
   RUN_LINK: "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
   CHECK_NAME: "benchmark / benchmark-vs-thresholds"
@@ -36,9 +38,11 @@ jobs:
 
       - name: Find commit info
         id: commit-info
+        env:
+          INPUT_SHA: ${{ inputs.sha }}
         run: |
-          if [[ -n '${{ inputs.sha }}' ]]; then
-            FULL_SHA="$(curl "https://api.github.com/repos/${{ github.repository }}/commits/${{ inputs.sha }}" | jq -r '.sha')"
+          if [[ -n "${INPUT_SHA}" ]]; then
+            FULL_SHA="$(curl "https://api.github.com/repos/${{ github.repository }}/commits/${INPUT_SHA}" | jq -r '.sha')"
 
             # Get the oldest PR that contains the commit
             PR="$(
@@ -51,7 +55,7 @@ jobs:
             PR_NUMBER="$(echo "${PR}" | jq -r '.number')"
 
             if [[ -z "${PR_NUMBER}" ]]; then
-              echo 'failed to find PR info for commit "${{ inputs.sha }}"'
+              echo "failed to find PR info for commit '${INPUT_SHA}'"
               exit 1
             fi
 
@@ -82,8 +86,10 @@ jobs:
 
       - name: Construct in-progress comment
         if: steps.commit-info.outputs.pr_number != ''
+        env:
+          MD_LINK: ${{ steps.commit-info.outputs.md_link }}
         run: |
-          echo "## [Benchmark](${RUN_LINK}) Report for ${{ steps.commit-info.outputs.md_link }}" >> in-progress-comment.md
+          echo "## [Benchmark](${RUN_LINK}) Report for ${MD_LINK}" >> in-progress-comment.md
           echo 'Benchmark in progress...' >> in-progress-comment.md
 
       - name: Comment in PR
@@ -114,23 +120,29 @@ jobs:
           restore-keys: "swiftpm-benchmark-build-${{ runner.os }}-"
 
       - name: Run benchmarks for '${{ steps.commit-info.outputs.title }}'
+        env:
+          TITLE: ${{ steps.commit-info.outputs.title }}
         run: |
           swift package -c release --disable-sandbox \
             --package-path Benchmarks \
             benchmark baseline update \
-            '${{ steps.commit-info.outputs.title }}'
+            "${TITLE}"
 
       - name: Read benchmark result
+        env:
+          TITLE: ${{ steps.commit-info.outputs.title }}
         run: |
           swift package -c release --disable-sandbox \
             --package-path Benchmarks \
             benchmark baseline read \
-            '${{ steps.commit-info.outputs.title }}' \
+            "${TITLE}" \
             --format markdown \
             | tee -a benchmark.md
 
       - name: Compare '${{ steps.commit-info.outputs.title }}' against thresholds
         id: comparison
+        env:
+          TITLE: ${{ steps.commit-info.outputs.title }}
         run: |
           TIMESTAMP="$(date -u +"%Y-%m-%d %H:%M:%S UTC")"
           echo "## Benchmark check running at ${TIMESTAMP}" | tee -a comparison.md
@@ -140,7 +152,7 @@ jobs:
           swift package -c release --disable-sandbox \
             --package-path Benchmarks \
             benchmark thresholds check \
-            '${{ steps.commit-info.outputs.title }}' \
+           "${TITLE}" \
             --path "Benchmarks/Thresholds/" \
             --format markdown \
             | tee -a comparison.md
@@ -155,16 +167,17 @@ jobs:
           key: "swiftpm-benchmark-build-${{ runner.os }}-${{ steps.commit-info.outputs.sha }}"
 
       - name: Construct result comment
+        env:
+          MD_LINK: ${{ steps.commit-info.outputs.md_link }}
+          STATUS: ${{ steps.comparison.outputs.exit-status }}
         run: |
-          echo "## [Benchmark](${RUN_LINK}) Report for ${{ steps.commit-info.outputs.md_link }}" | tee -a comment.md
-
-          EXIT_CODE='${{ steps.comparison.outputs.exit-status }}'
-          case "${EXIT_CODE}" in
+          echo "## [Benchmark](${RUN_LINK}) Report for ${MD_LINK}" | tee -a comment.md
+          case "${STATUS}" in
               0) echo '**✅ Pull request has no significant performance differences ✅**' | tee -a comment.md ;;
               1) echo '**❓ Pull request has significant performance differences 📊**' | tee -a comment.md ;;
               2) echo '**❌ Pull request has significant performance regressions 📉**' | tee -a comment.md ;;
               4) echo '**⚠️ Pull request has significant performance improvements 📈**' | tee -a comment.md ;;
-              *) echo '**🚫 Benchmark comparison failed with unknown exit code ${EXIT_CODE} 🚫**' | tee -a comment.md ;;
+              *) echo '**🚫 Benchmark comparison failed with unknown exit code ${STATUS} 🚫**' | tee -a comment.md ;;
           esac
 
           printf '<details>\n  <summary>Click to expand comparison result</summary>\n\n%s\n\n</details>\n\n' "$(cat comparison.md)" | tee -a comment.md
@@ -181,16 +194,22 @@ jobs:
           github-token: ${{ steps.create-penny-token.outputs.token }}
 
       - name: Output the comment as job summary
+        env:
+          PR: ${{ steps.commit-info.outputs.pr_number }}
+          HTML_URL: ${{ steps.pr-comment.outputs.html-url }}
         run: |
           cat comment.md >> "${GITHUB_STEP_SUMMARY}"
-          if [[ -n '${{ steps.commit-info.outputs.pr_number }}' ]]; then
-            echo 'Commented at [PR comment](${{ steps.pr-comment.outputs.html-url }})' >> "${GITHUB_STEP_SUMMARY}"
+          if [[ -n "${PR}" ]]; then
+            echo "Commented at [PR comment](${HTML_URL})" >> "${GITHUB_STEP_SUMMARY}"
           fi
 
       - name: Update commit status
         if: steps.commit-info.outputs.pr_number != ''
+        env:
+          STATUS: ${{ steps.comparison.outputs.exit-status }}
+          SHA: ${{ steps.commit-info.outputs.sha }}
         run: |
-          STATE=$([ "${{ steps.comparison.outputs.exit-status }}" == '0' ] && echo 'success' || echo 'failure')
+          STATE=$([ "${STATUS}" == '0' ] && echo 'success' || echo 'failure')
           BODY="$(
             jq -n \
               --arg state "${STATE}" \
@@ -203,7 +222,7 @@ jobs:
             -H 'Accept: application/vnd.github+json' \
             -H 'Authorization: Bearer ${{ steps.create-penny-token.outputs.token }}' \
             -H 'X-GitHub-Api-Version: 2022-11-28' \
-            'https://api.github.com/repos/${{ github.repository }}/statuses/${{ steps.commit-info.outputs.sha }}' \
+            "https://api.github.com/repos/${{ github.repository }}/statuses/${SHA}" \
             -d "${BODY}"
 
       - name: Exit with correct status
