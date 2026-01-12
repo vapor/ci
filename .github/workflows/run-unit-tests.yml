@@ -92,6 +92,11 @@ on:
         required: false
         default: 'test'
         description: "Action to pass to xcodebuild when running iOS tests. Defaults to 'test'. Set to '' to just compile and not run tests."
+      enable_all_traits:
+        type: boolean
+        required: false
+        default: false
+        description: "Set to 'false' to enable only default traits when running tests. Defaults to 'false'. Doesn't have any effect on the disabled-traits-unit job."
     secrets:
       CODECOV_TOKEN:
         required: false
@@ -106,6 +111,7 @@ env:
   WITH_COVERAGE: ${{ inputs.with_coverage && '--enable-code-coverage' || '' }}
   IOS_SCHEME_NAME: ${{ inputs.ios_scheme_name }}
   IOS_XCODEBUILD_ACTION: ${{ inputs.ios_xcodebuild_action }}
+  ENABLE_ALL_TRAITS: ${{ inputs.enable_all_traits && '--enable-all-traits' || '' }}
 
 jobs:
   api-breakage:
@@ -115,7 +121,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Check out code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with: { 'fetch-depth': 0 }
       - name: Run API breakage check
         run: |
@@ -140,7 +146,7 @@ jobs:
         run: apt-get update -yq && apt-get install -y curl
       - name: Check out code
         if: ${{ matrix.swift-config.build-mode == 'debug' || inputs.with_release_mode_testing }}
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Check Swift compatibility
         id: swift-check
         if: ${{ matrix.swift-config.build-mode == 'debug' || inputs.with_release_mode_testing }}
@@ -177,6 +183,7 @@ jobs:
             ${WARNINGS_AS_ERRORS} \
             ${WITH_COVERAGE} \
             ${TEST_FILTER} \
+            ${ENABLE_ALL_TRAITS} \
             ${EXTRA_FLAGS}
       - name: Cache .build
         if: ${{ (steps.restore-cache.outputs.cache-hit != 'true') && (steps.swift-check.outputs.swift-compatible == 'true') && (matrix.swift-config.build-mode == 'debug' || inputs.with_release_mode_testing) }}
@@ -210,7 +217,7 @@ jobs:
         with:
           xcode-version: ${{ matrix.xcode-version }}
       - name: Check out code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Check Swift compatibility
         id: swift-check
         uses: vapor/ci/.github/actions/check-compatible-swift@main
@@ -224,6 +231,7 @@ jobs:
             ${WITH_TSAN} \
             ${WITH_COVERAGE} \
             ${TEST_FILTER} \
+            ${ENABLE_ALL_TRAITS} \
             ${EXTRA_FLAGS}
       - name: Upload coverage data
         if: ${{ (steps.swift-check.outputs.swift-compatible == 'true') && inputs.with_coverage }}
@@ -256,7 +264,7 @@ jobs:
           swift-build: ${{ matrix.swift-tag }}
           update-sdk-modules: true
       - name: Check out code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Check Swift compatibility
         id: swift-check
         uses: vapor/ci/.github/actions/check-compatible-swift@main
@@ -265,7 +273,10 @@ jobs:
       - name: Run unit tests
         if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
         run: |
-          $params = @(); $params += ($env:WARNINGS_AS_ERRORS -split ' '); $params += ($env:EXTRA_FLAGS -split ' ')
+          $params = @();
+          $params += ($env:WARNINGS_AS_ERRORS -split ' ');
+          $params += ($env:ENABLE_ALL_TRAITS -split ' ');
+          $params += ($env:EXTRA_FLAGS -split ' ')
           swift test $env:PACKAGE_ROOT $env:TEST_FILTER @params
 
   ios-unit:
@@ -277,7 +288,7 @@ jobs:
         with:
           xcode-version: latest-stable
       - name: Check out code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Run iOS Tests
         run: |
           name="$(xcrun simctl list -j -e devices | jq -r '[.devices | to_entries[] | select(.key | contains(".iOS-"))] | sort_by(.key) | last | .value | first | .name')"
@@ -293,7 +304,7 @@ jobs:
       - name: Configure git
         run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Check out code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Read config file
         # if .swift-format is not provided in the repo, use the default config file from CI
         run: |
@@ -314,9 +325,15 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Check out code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
+      - name: Install linux dependencies
+        run: apt-get update && apt-get install -y curl jq
       - name: Install SDK
-        run: swift sdk install https://download.swift.org/swift-6.2-release/static-sdk/swift-6.2-RELEASE/swift-6.2-RELEASE_static-linux-0.0.1.artifactbundle.tar.gz --checksum d2225840e592389ca517bbf71652f7003dbf45ac35d1e57d98b9250368769378
+        run: |
+          tag="$(swiftc --version | grep -Po '(?<=\().+(?=\))')"
+          checksum="$(curl -s https://www.swift.org/api/v1/install/releases.json | \
+            jq -r --arg tag "$tag" '.[] | select(.tag == $tag).platforms[] | select(.platform == "static-sdk").checksum // empty')"
+          swift sdk install https://download.swift.org/$(echo $tag | tr [A-Z] [a-z])/static-sdk/$tag/"$tag"_static-linux-0.0.1.artifactbundle.tar.gz --checksum $checksum
       - name: Check Swift compatibility
         id: swift-check
         uses: vapor/ci/.github/actions/check-compatible-swift@main
@@ -324,25 +341,26 @@ jobs:
           package_root: ${{ inputs.package_root }}
       - name: Build
         if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
-        run: swift build --swift-sdk x86_64-swift-linux-musl ${PACKAGE_PATH} ${EXTRA_FLAGS} ${EXTRA_MUSL_FLAGS} ${WARNINGS_AS_ERRORS}
-        
+        run: swift build --swift-sdk x86_64-swift-linux-musl ${PACKAGE_PATH} ${EXTRA_FLAGS} ${EXTRA_MUSL_FLAGS} ${WARNINGS_AS_ERRORS} ${ENABLE_ALL_TRAITS}
+
   wasm:
     if: ${{ !(github.event.pull_request.draft || false) && inputs.with_wasm }}
     runs-on: ubuntu-latest
-    container: swift:6.2.0-noble
+    container: swift:noble
     timeout-minutes: 30
     steps:
       - name: Check out code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       # NOTE: Portions of this workflow are adapted from
       # https://github.com/apple/swift-nio/pull/3159/
       - name: Install linux dependencies
-        run: apt-get update -y -q && apt-get install -y -q curl && apt-get install -y -q jq
+        run: apt-get update -y -q && apt-get install -y -q curl jq
       - name: Install SDK
         run: |
-          version="$(swiftc --version | head -n1)"
-          tag="$(curl -sL "https://raw.githubusercontent.com/swiftwasm/swift-sdk-index/refs/heads/main/v1/tag-by-version.json" | jq -e -r --arg v "$version" '.[$v] | .[-1]')"
-          curl -sL "https://raw.githubusercontent.com/swiftwasm/swift-sdk-index/refs/heads/main/v1/builds/$tag.json" | jq -r '.["swift-sdks"]["wasm32-unknown-wasip1-threads"] | "swift sdk install \"\(.url)\" --checksum \"\(.checksum)\""' | sh -x
+          tag="$(swiftc --version | grep -Po '(?<=\().+(?=\))')"
+          checksum="$(curl -s https://www.swift.org/api/v1/install/releases.json | \
+            jq -r --arg tag "$tag" '.[] | select(.tag == $tag).platforms[] | select(.platform == "wasm-sdk").checksum // empty')"
+          swift sdk install https://download.swift.org/$(echo $tag | tr [A-Z] [a-z])/wasm-sdk/$tag/"$tag"_wasm.artifactbundle.tar.gz --checksum $checksum
       - name: Check Swift compatibility
         id: swift-check
         uses: vapor/ci/.github/actions/check-compatible-swift@main
@@ -350,7 +368,9 @@ jobs:
           package_root: ${{ inputs.package_root }}
       - name: Build
         if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
-        run: swift build --swift-sdk wasm32-unknown-wasip1-threads ${PACKAGE_PATH} ${EXTRA_FLAGS} ${WARNINGS_AS_ERRORS}
+        run: |
+          tag="$(swiftc --version | grep -Po '(?<=\().+(?=\))')"
+          swift build --swift-sdk "$tag"_wasm ${PACKAGE_PATH} ${EXTRA_FLAGS} ${WARNINGS_AS_ERRORS} ${ENABLE_ALL_TRAITS}
 
   android-unit:
     if: ${{ !(github.event.pull_request.draft || false) && inputs.with_android }}
@@ -366,7 +386,7 @@ jobs:
       - name: Ensure zstd is available
         run: sudo apt-get update -yq && sudo apt-get install -yq zstd
       - name: Check out code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Check Swift compatibility
         id: swift-check
         uses: vapor/ci/.github/actions/check-compatible-swift@main
@@ -379,3 +399,5 @@ jobs:
         with:
           swift-version: ${{ matrix.swift-version }}
           copy-files: ${{ inputs.android_copy_files }}
+          swift-test-flags: ${{ env.ENABLE_ALL_TRAITS }}
+          free-disk-space: true
