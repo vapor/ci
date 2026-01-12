@@ -349,7 +349,7 @@ jobs:
         if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
         run: |
           tag="$(swiftc --version | grep -Po '(?<=\().+(?=\))')"
-          swift build --swift-sdk $tag_wasm ${PACKAGE_PATH} ${EXTRA_FLAGS} ${WARNINGS_AS_ERRORS} ${ENABLE_ALL_TRAITS}
+          swift build --swift-sdk "$tag"_wasm ${PACKAGE_PATH} ${EXTRA_FLAGS} ${WARNINGS_AS_ERRORS} ${ENABLE_ALL_TRAITS}
 
   android-unit:
     if: ${{ !(github.event.pull_request.draft || false) && inputs.with_android }}
