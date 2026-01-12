@@ -100,6 +100,8 @@ on:
     secrets:
       CODECOV_TOKEN:
         required: false
+permissions:
+  contents: read
 env:
   WITH_TESTING: ${{ inputs.with_testing && '-Xswiftc -enable-testing' || '' }}
   PACKAGE_ROOT: ${{ inputs.package_root != '' && format('--package-path={0}', inputs.package_root) || '' }}
