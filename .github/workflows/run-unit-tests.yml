@@ -169,7 +169,7 @@ jobs:
         # If this step is restoring malformed data, use 'Enable debug logging' on a re-run to disable the step.
         if: ${{ (runner.debug != '1') && (steps.swift-check.outputs.swift-compatible == 'true') && (matrix.swift-config.build-mode == 'debug' || inputs.with_release_mode_testing) }}
         id: "restore-cache"
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: .build
           key: "${{ matrix.swift-config.image }}-${{ matrix.swift-config.build-mode }}-build-${{ runner.os }}-${{ github.event.pull_request.base.sha || github.event.after }}"
@@ -189,7 +189,7 @@ jobs:
             ${EXTRA_FLAGS}
       - name: Cache .build
         if: ${{ (steps.restore-cache.outputs.cache-hit != 'true') && (steps.swift-check.outputs.swift-compatible == 'true') && (matrix.swift-config.build-mode == 'debug' || inputs.with_release_mode_testing) }}
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: .build
           key: "${{ matrix.swift-config.image }}-${{ matrix.swift-config.build-mode }}-build-${{ runner.os }}-${{ github.event.pull_request.base.sha || github.event.after }}"
