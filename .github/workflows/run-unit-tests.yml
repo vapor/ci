@@ -166,12 +166,12 @@ jobs:
         shell: bash
         run: 'echo "EXTRA_FLAGS=$(echo "${EXTRA_FLAGS}" | sed -Ee "s/--(dis|en)able-experimental-prebuilts//g")" >>"${GITHUB_ENV}"'
       - name: Restore .build
-        # If this step is restoring malformed data, use 'Enable debug logging' on a re-run to disable the step.
+        # If cache-restore is causing the CI to fail, use 'Enable debug logging' on a re-run to disable the step.
         if: ${{ (runner.debug != '1') && (steps.swift-check.outputs.swift-compatible == 'true') && (matrix.swift-config.build-mode == 'debug' || inputs.with_release_mode_testing) }}
         id: "restore-cache"
         uses: actions/cache/restore@v5
         with:
-          path: .build
+          path: "${{ inputs.package_root != '' && format('{0}/.build', inputs.package_root) || '.build' }}"
           key: "${{ matrix.swift-config.image }}-${{ matrix.swift-config.build-mode }}-build-${{ runner.os }}-${{ github.event.pull_request.base.sha || github.event.after }}"
           restore-keys: "${{ matrix.swift-config.image }}-${{ matrix.swift-config.build-mode }}-build-${{ runner.os }}-"
       - name: Run unit tests
@@ -191,7 +191,7 @@ jobs:
         if: ${{ (steps.restore-cache.outputs.cache-hit != 'true') && (steps.swift-check.outputs.swift-compatible == 'true') && (matrix.swift-config.build-mode == 'debug' || inputs.with_release_mode_testing) }}
         uses: actions/cache/save@v5
         with:
-          path: .build
+          path: "${{ inputs.package_root != '' && format('{0}/.build', inputs.package_root) || '.build' }}"
           key: "${{ matrix.swift-config.image }}-${{ matrix.swift-config.build-mode }}-build-${{ runner.os }}-${{ github.event.pull_request.base.sha || github.event.after }}"
       - name: Upload coverage data
         if: ${{ inputs.with_coverage && (steps.swift-check.outputs.swift-compatible == 'true') && (matrix.swift-config.build-mode == 'debug' || inputs.with_release_mode_testing) }}
@@ -225,6 +225,15 @@ jobs:
         uses: vapor/ci/.github/actions/check-compatible-swift@main
         with:
           package_root: ${{ inputs.package_root }}
+      - name: Restore .build
+        # If cache-restore is causing the CI to fail, use 'Enable debug logging' on a re-run to disable the step.
+        if: ${{ (runner.debug != '1') && (steps.swift-check.outputs.swift-compatible == 'true') }}
+        id: "restore-cache"
+        uses: actions/cache/restore@v5
+        with:
+          path: "${{ inputs.package_root != '' && format('{0}/.build', inputs.package_root) || '.build' }}"
+          key: "${{ matrix.xcode-version }}-${{ matrix.macos-version }}-build-${{ runner.os }}-${{ github.event.pull_request.base.sha || github.event.after }}"
+          restore-keys: "${{ matrix.xcode-version }}-${{ matrix.macos-version }}-build-${{ runner.os }}-"
       - name: Run unit tests
         if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
         run: |
@@ -235,6 +244,12 @@ jobs:
             ${TEST_FILTER} \
             ${ENABLE_ALL_TRAITS} \
             ${EXTRA_FLAGS}
+      - name: Cache .build
+        if: ${{ (steps.restore-cache.outputs.cache-hit != 'true') && (steps.swift-check.outputs.swift-compatible == 'true') }}
+        uses: actions/cache/save@v5
+        with:
+          path: "${{ inputs.package_root != '' && format('{0}/.build', inputs.package_root) || '.build' }}"
+          key: "${{ matrix.xcode-version }}-${{ matrix.macos-version }}-build-${{ runner.os }}-${{ github.event.pull_request.base.sha || github.event.after }}"
       - name: Upload coverage data
         if: ${{ (steps.swift-check.outputs.swift-compatible == 'true') && inputs.with_coverage }}
         uses: vapor/swift-codecov-action@v0.3
@@ -272,6 +287,15 @@ jobs:
         uses: vapor/ci/.github/actions/check-compatible-swift@main
         with:
           package_root: ${{ inputs.package_root }}
+      - name: Restore .build
+        # If cache-restore is causing the CI to fail, use 'Enable debug logging' on a re-run to disable the step.
+        if: ${{ (runner.debug != '1') && (steps.swift-check.outputs.swift-compatible == 'true') }}
+        id: "restore-cache"
+        uses: actions/cache/restore@v5
+        with:
+          path: "${{ inputs.package_root != '' && format('{0}/.build', inputs.package_root) || '.build' }}"
+          key: "${{ matrix.swift-tag }}-build-${{ runner.os }}-${{ github.event.pull_request.base.sha || github.event.after }}"
+          restore-keys: "${{ matrix.swift-tag }}-build-${{ runner.os }}-"
       - name: Run unit tests
         if: ${{ steps.swift-check.outputs.swift-compatible == 'true' }}
         run: |
@@ -280,6 +304,12 @@ jobs:
           $params += ($env:ENABLE_ALL_TRAITS -split ' ');
           $params += ($env:EXTRA_FLAGS -split ' ')
           swift test $env:PACKAGE_ROOT $env:TEST_FILTER @params
+      - name: Cache .build
+        if: ${{ (steps.restore-cache.outputs.cache-hit != 'true') && (steps.swift-check.outputs.swift-compatible == 'true') }}
+        uses: actions/cache/save@v5
+        with:
+          path: "${{ inputs.package_root != '' && format('{0}/.build', inputs.package_root) || '.build' }}"
+          key: "${{ matrix.swift-tag }}-build-${{ runner.os }}-${{ github.event.pull_request.base.sha || github.event.after }}"
 
   ios-unit:
     if: ${{ !(github.event.pull_request.draft || false) && inputs.ios_scheme_name != '' }}
