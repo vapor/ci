@@ -71,3 +71,7 @@ jobs:
       with_wasm: ${{ inputs.with_platform == 'all' || inputs.with_platform == 'wasm' || true }}
       with_android: ${{ inputs.with_platform == 'all' || inputs.with_platform == 'android'|| true }}
       ios_scheme_name: ${{ inputs.ios_scheme_name || 'sample-testable-package-Package' }}
+
+  call-deps-workflow:
+    uses: ./.github/workflows/submit-deps.yml
+    
