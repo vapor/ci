@@ -12,7 +12,6 @@ permissions:
 
 jobs:
   dependency-graph:
-    if: ${{ github.event_name == 'push' }}
     runs-on: ubuntu-latest
     container: swift:noble
     steps:
