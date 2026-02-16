@@ -1,0 +1,26 @@
+name: submit-dependencies
+on:
+  workflow_call:
+    inputs:
+       package_root:
+        type: string
+        required: false
+        default: ''
+        description: "Specifies a subpath of the checkout to run tests and upload coverage from."
+permissions:
+  contents: write
+
+jobs:
+  dependency-graph:
+    if: ${{ github.event_name == 'push' }}
+    runs-on: ubuntu-latest
+    container: swift:noble
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+      - name: Fix Git configuration
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+      - name: Submit dependency graph
+        uses: vapor-community/swift-dependency-submission@main
+        with:
+          path: ${{ inputs.package_root != '' && inputs.package_root || github.workspace }}
