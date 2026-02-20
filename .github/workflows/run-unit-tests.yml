@@ -350,7 +350,7 @@ jobs:
       - name: Lint
         run: |
           apt -q update && apt -yq install curl
-          curl -s https://raw.githubusercontent.com/swiftlang/github-workflows/refs/heads/main/.github/workflows/scripts/check-swift-format.sh | bash
+          curl -s https://raw.githubusercontent.com/swiftlang/github-workflows/refs/heads/main/.github/actions/format-check/check-swift-format.sh | bash
 
   musl:
     if: ${{ !(github.event.pull_request.draft || false) && inputs.with_musl }}
