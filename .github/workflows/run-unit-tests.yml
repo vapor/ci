@@ -146,8 +146,8 @@ jobs:
     container: ${{ matrix.swift-config.image }}
     timeout-minutes: 60
     steps:
-      - name: Install curl
-        run: apt-get update -yq && apt-get install -y curl
+      - name: Install curl and zstd
+        run: apt-get update -yq && apt-get install -y curl zstd
       - name: Check out code
         if: ${{ matrix.swift-config.build-mode == 'debug' || inputs.with_release_mode_testing }}
         uses: actions/checkout@v6
@@ -157,12 +157,6 @@ jobs:
         uses: vapor/ci/.github/actions/check-compatible-swift@main
         with:
           package_root: ${{ inputs.package_root }}
-      # actions/cache will detect zstd and will become much faster.
-      - name: Install zstd
-        if: ${{ (steps.swift-check.outputs.swift-compatible == 'true') && (matrix.swift-config.build-mode == 'debug' || inputs.with_release_mode_testing) }}
-        run: |
-          apt-get update -y
-          apt-get install -y zstd
       - name: Strip flags incompatible with 6.0
         if: ${{ matrix.swift-config.image == 'swift:6.0-noble' && steps.swift-check.outputs.swift-compatible == 'true' && (matrix.swift-config.build-mode == 'debug' || inputs.with_release_mode_testing) }}
         shell: bash
@@ -220,6 +214,8 @@ jobs:
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: ${{ matrix.xcode-version }}
+      - name: Install zstd
+        run: brew install zstd
       - name: Check out code
         uses: actions/checkout@v6
       - name: Check Swift compatibility
