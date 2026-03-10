@@ -138,6 +138,9 @@ jobs:
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
           swift package ${PACKAGE_ROOT} diagnose-api-breaking-changes --baseline-dir=${BASELINES} --regenerate-baseline origin/main
+          ##TESTING##
+          echo $RANDOM > ${BASELINES}/random.txt
+          ##TESTING##
       - { name: Cache API baseline, uses: actions/cache/save@v5, with: { path: "${{ env.BASELINES }}", key: api-breakage } }
 
   linux-unit:
