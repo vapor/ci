@@ -123,13 +123,19 @@ jobs:
     container: swift:noble
     steps:
       - { name: Check out code, uses: actions/checkout@v6, with: { 'fetch-depth': 0 } }
-      - { name: Restore API baseline, uses: actions/cache/restore@v5, with: { path: "${{ env.BASELINES }}", key: api-breakage } }
+      - name: Restore API baseline
+        uses: actions/cache/restore@v5
+        with:
+          path: ${{ env.BASELINES }}
+          # N.B.: Do not use restore-keys to restore a different api-breakage cache; the result will be a comparison against
+          # an outdated baseline, which invalidates the check.
+          key: api-breakage-${{ github.event.pull_request.base.sha }}
       - name: Run API breakage check
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
           swift package ${PACKAGE_ROOT} diagnose-api-breaking-changes --baseline-dir=${BASELINES} origin/main
   api-breakage-baseline:
-    #if: ${{ inputs.with_api_check && github.event_name == 'push' && github.ref == 'main' }}
+    if: ${{ inputs.with_api_check && github.event_name == 'push' && github.ref == 'main' }}
     runs-on: ubuntu-latest
     container: swift:noble
     steps:
@@ -138,10 +144,11 @@ jobs:
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
           swift package ${PACKAGE_ROOT} diagnose-api-breaking-changes --baseline-dir=${BASELINES} --regenerate-baseline origin/main
-          ##TESTING##
-          echo $RANDOM > ${BASELINES}/random.txt
-          ##TESTING##
-      - { name: Cache API baseline, uses: actions/cache/save@v5, with: { path: "${{ env.BASELINES }}", key: api-breakage } }
+      - name: Cache API baseline
+        uses: actions/cache/save@v5
+        with:
+          path: ${{ env.BASELINES }}
+          key: api-breakage-${{ github.sha }}
 
   linux-unit:
     if: ${{ !(github.event.pull_request.draft || false) }}
