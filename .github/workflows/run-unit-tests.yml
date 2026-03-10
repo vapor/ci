@@ -135,7 +135,7 @@ jobs:
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
           swift package ${PACKAGE_ROOT} diagnose-api-breaking-changes --baseline-dir=${BASELINES} origin/main
   api-breakage-baseline:
-    if: ${{ inputs.with_api_check && github.event_name == 'push' && github.ref == 'main' }}
+    if: ${{ inputs.with_api_check && github.event_name == 'push' && github.ref_name == 'main' }}
     runs-on: ubuntu-latest
     container: swift:noble
     steps:
