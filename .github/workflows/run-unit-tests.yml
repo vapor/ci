@@ -132,7 +132,7 @@ jobs:
       - { name: Cache API baseline, uses: actions/cache/save@v5, with: { path: "${{ env.BASELINES }}", key: api-breakage } }
       ###REMOVE THIS BEFORE MERGING###
   api-breakage-baseline:
-    #if: ${{ inputs.with_api_check && github.event_name == 'push' && github.ref == 'main' }}
+    if: ${{ inputs.with_api_check && github.event_name == 'push' && github.ref == 'main' }}
     runs-on: ubuntu-latest
     container: swift:noble
     steps:
