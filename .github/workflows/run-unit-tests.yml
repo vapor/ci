@@ -105,6 +105,7 @@ permissions:
 env:
   WITH_TESTING: ${{ inputs.with_testing && '-Xswiftc -enable-testing' || '' }}
   PACKAGE_ROOT: ${{ inputs.package_root != '' && format('--package-path={0}', inputs.package_root) || '' }}
+  BASELINES: ${{ inputs.package_root || '.' }}/.api-breakage
   EXTRA_FLAGS:  ${{ inputs.extra_flags || '--explicit-target-dependency-import-check error -Xswiftc -require-explicit-sendable' }}
   EXTRA_MUSL_FLAGS: ${{ inputs.extra_musl_flags }}
   WITH_TSAN: ${{ inputs.with_tsan && '--sanitize=thread' || '' }}
@@ -120,15 +121,34 @@ jobs:
     if: ${{ inputs.with_api_check && github.event_name == 'pull_request' && !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
     container: swift:noble
-    timeout-minutes: 30
     steps:
-      - name: Check out code
-        uses: actions/checkout@v6
-        with: { 'fetch-depth': 0 }
+      - { name: Check out code, uses: actions/checkout@v6, with: { 'fetch-depth': 0 } }
+      - name: Restore API baseline
+        uses: actions/cache/restore@v5
+        with:
+          path: ${{ env.BASELINES }}
+          # N.B.: Do not use restore-keys to restore a different api-breakage cache; the result will be a comparison against
+          # an outdated baseline, which invalidates the check.
+          key: api-breakage-${{ github.event.pull_request.base.sha }}
       - name: Run API breakage check
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
-          swift package ${PACKAGE_ROOT} diagnose-api-breaking-changes origin/main
+          swift package ${PACKAGE_ROOT} diagnose-api-breaking-changes --baseline-dir=${BASELINES} origin/main
+  api-breakage-baseline:
+    if: ${{ inputs.with_api_check && github.event_name == 'push' && github.ref == 'main' }}
+    runs-on: ubuntu-latest
+    container: swift:noble
+    steps:
+      - { name: Check out code, uses: actions/checkout@v6, with: { 'fetch-depth': 0 } }
+      - name: Regenerate API breakage baseline
+        run: |
+          git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+          swift package ${PACKAGE_ROOT} diagnose-api-breaking-changes --baseline-dir=${BASELINES} --regenerate-baseline origin/main
+      - name: Cache API baseline
+        uses: actions/cache/save@v5
+        with:
+          path: ${{ env.BASELINES }}
+          key: api-breakage-${{ github.sha }}
 
   linux-unit:
     if: ${{ !(github.event.pull_request.draft || false) }}
