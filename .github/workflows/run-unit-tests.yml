@@ -125,7 +125,9 @@ jobs:
       - { name: Check out code, uses: actions/checkout@v6, with: { 'fetch-depth': 0 } }
       - { name: Restore API baseline, uses: actions/cache/restore@v5, with: { path: "${{ env.BASELINES }}", key: api-breakage } }
       - name: Run API breakage check
-        run: swift package ${PACKAGE_ROOT} diagnose-api-breaking-changes --baseline-dir=${BASELINES} origin/main
+        run: |
+          git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+          swift package ${PACKAGE_ROOT} diagnose-api-breaking-changes --baseline-dir=${BASELINES} origin/main
   api-breakage-baseline:
     if: ${{ inputs.with_api_check && github.event_name == 'push' && github.ref == 'main' }}
     runs-on: ubuntu-latest
@@ -133,7 +135,9 @@ jobs:
     steps:
       - { name: Check out code, uses: actions/checkout@v6, with: { 'fetch-depth': 0 } }
       - name: Regenerate API breakage baseline
-        run: swift package ${PACKAGE_ROOT} diagnose-api-breaking-changes --baseline-dir=${BASELINES} --regenerate-baseline origin/main
+        run: |
+          git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+          swift package ${PACKAGE_ROOT} diagnose-api-breaking-changes --baseline-dir=${BASELINES} --regenerate-baseline origin/main
       - { name: Cache API baseline, uses: actions/cache/save@v5, with: { path: "${{ env.BASELINES }}", key: api-breakage } }
 
   linux-unit:
