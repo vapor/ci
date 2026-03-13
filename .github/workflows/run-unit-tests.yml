@@ -426,6 +426,8 @@ jobs:
 
   android-unit:
     if: ${{ !(github.event.pull_request.draft || false) && inputs.with_android }}
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     strategy:
       fail-fast: false
       matrix:
