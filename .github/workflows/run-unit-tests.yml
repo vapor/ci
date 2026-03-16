@@ -103,6 +103,7 @@ on:
 permissions:
   contents: read
 env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   WITH_TESTING: ${{ inputs.with_testing && '-Xswiftc -enable-testing' || '' }}
   PACKAGE_ROOT: ${{ inputs.package_root != '' && format('--package-path={0}', inputs.package_root) || '' }}
   BASELINES: ${{ inputs.package_root || '.' }}/.api-breakage
@@ -234,8 +235,6 @@ jobs:
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: ${{ matrix.xcode-version }}
-      - name: Install zstd
-        run: brew install zstd
       - name: Check out code
         uses: actions/checkout@v6
       - name: Check Swift compatibility
@@ -245,8 +244,8 @@ jobs:
           package_root: ${{ inputs.package_root }}
       - name: Restore .build
         # If cache-restore is causing the CI to fail, use 'Enable debug logging' on a re-run to disable the step.
-        if: ${{ (runner.debug != '1') && (steps.swift-check.outputs.swift-compatible == 'true') }}
-        id: "restore-cache"
+        if: ${{ runner.debug != '1' && steps.swift-check.outputs.swift-compatible == 'true' }}
+        id: restore-cache
         uses: actions/cache/restore@v5
         with:
           path: "${{ inputs.package_root != '' && format('{0}/.build', inputs.package_root) || '.build' }}"
