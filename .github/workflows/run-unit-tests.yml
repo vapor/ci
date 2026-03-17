@@ -181,10 +181,10 @@ jobs:
       - name: Strip flags incompatible with 6.0
         if: ${{ matrix.swift-config.image == 'swift:6.0-noble' && steps.swift-check.outputs.swift-compatible == 'true' && (matrix.swift-config.build-mode == 'debug' || inputs.with_release_mode_testing) }}
         shell: bash
-        run: 'echo "EXTRA_FLAGS=$(echo "${EXTRA_FLAGS}" | sed -Ee "s/--(dis|en)able-experimental-prebuilts//g")" >>"${GITHUB_ENV}"'
+        run: 'echo "EXTRA_FLAGS=$(echo "${EXTRA_FLAGS}" | sed -Ee "s/--((dis|en)able-experimental-prebuilts)|(enable-all-traits)//g")" >>"${GITHUB_ENV}"'
       - name: Restore .build
         # If cache-restore is causing the CI to fail, use 'Enable debug logging' on a re-run to disable the step.
-        if: ${{ (runner.debug != '1') && (steps.swift-check.outputs.swift-compatible == 'true') && (matrix.swift-config.build-mode == 'debug' || inputs.with_release_mode_testing) }}
+        if: ${{ runner.debug != '1' && steps.swift-check.outputs.swift-compatible == 'true' && (matrix.swift-config.build-mode == 'debug' || inputs.with_release_mode_testing) }}
         id: "restore-cache"
         uses: actions/cache/restore@v5
         with:
@@ -205,7 +205,7 @@ jobs:
             ${ENABLE_ALL_TRAITS} \
             ${EXTRA_FLAGS}
       - name: Cache .build
-        if: ${{ (steps.restore-cache.outputs.cache-hit != 'true') && (steps.swift-check.outputs.swift-compatible == 'true') && (matrix.swift-config.build-mode == 'debug' || inputs.with_release_mode_testing) }}
+        if: ${{ steps.restore-cache.outputs.cache-hit != 'true' && steps.swift-check.outputs.swift-compatible == 'true' && (matrix.swift-config.build-mode == 'debug' || inputs.with_release_mode_testing) }}
         uses: actions/cache/save@v5
         with:
           path: "${{ inputs.package_root != '' && format('{0}/.build', inputs.package_root) || '.build' }}"
@@ -262,13 +262,13 @@ jobs:
             ${ENABLE_ALL_TRAITS} \
             ${EXTRA_FLAGS}
       - name: Cache .build
-        if: ${{ (steps.restore-cache.outputs.cache-hit != 'true') && (steps.swift-check.outputs.swift-compatible == 'true') }}
+        if: ${{ steps.restore-cache.outputs.cache-hit != 'true' && steps.swift-check.outputs.swift-compatible == 'true' }}
         uses: actions/cache/save@v5
         with:
           path: "${{ inputs.package_root != '' && format('{0}/.build', inputs.package_root) || '.build' }}"
           key: "${{ matrix.xcode-version }}-${{ matrix.macos-version }}-build-${{ runner.os }}-${{ github.event.pull_request.base.sha || github.event.after }}"
       - name: Upload coverage data
-        if: ${{ (steps.swift-check.outputs.swift-compatible == 'true') && inputs.with_coverage }}
+        if: ${{ steps.swift-check.outputs.swift-compatible == 'true' && inputs.with_coverage }}
         uses: vapor/swift-codecov-action@v0.3
         with:
           codecov_token:    ${{ secrets.CODECOV_TOKEN || '' }}
@@ -306,7 +306,7 @@ jobs:
           package_root: ${{ inputs.package_root }}
       - name: Restore .build
         # If cache-restore is causing the CI to fail, use 'Enable debug logging' on a re-run to disable the step.
-        if: ${{ (runner.debug != '1') && (steps.swift-check.outputs.swift-compatible == 'true') }}
+        if: ${{ runner.debug != '1' && steps.swift-check.outputs.swift-compatible == 'true' }}
         id: "restore-cache"
         uses: actions/cache/restore@v5
         with:
@@ -322,7 +322,7 @@ jobs:
           $params += ($env:EXTRA_FLAGS -split ' ')
           swift test $env:PACKAGE_ROOT $env:TEST_FILTER @params
       - name: Cache .build
-        if: ${{ (steps.restore-cache.outputs.cache-hit != 'true') && (steps.swift-check.outputs.swift-compatible == 'true') }}
+        if: ${{ steps.restore-cache.outputs.cache-hit != 'true' && steps.swift-check.outputs.swift-compatible == 'true' }}
         uses: actions/cache/save@v5
         with:
           path: "${{ inputs.package_root != '' && format('{0}/.build', inputs.package_root) || '.build' }}"
