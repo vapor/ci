@@ -52,7 +52,7 @@ jobs:
             # Get the oldest PR that contains the commit
             PR="$(
               curl "https://api.github.com/search/issues?q=${FULL_SHA}" | \
-                jq 'select(.items[].pull_request.url | contains("/${GITHUB_REPO}/")) | .items[-1]'
+                jq --arg repo "${GITHUB_REPO}" 'select(.items[].pull_request.url | contains("/\($repo)/")) | .items[-1]'
             )"
 
             # PR title, removing all occurrences of `'`
@@ -124,7 +124,7 @@ jobs:
           key: "swiftpm-benchmark-build-${{ runner.os }}-${{ steps.commit-info.outputs.sha }}"
           restore-keys: "swiftpm-benchmark-build-${{ runner.os }}-"
 
-      - name: Run benchmarks for '${{ steps.commit-info.outputs.title }}'
+      - name: "Run benchmarks for ${{ steps.commit-info.outputs.title }}"
         env:
           TITLE: ${{ steps.commit-info.outputs.title }}
         run: |
@@ -144,7 +144,7 @@ jobs:
             --format markdown \
             | tee -a benchmark.md
 
-      - name: Compare '${{ steps.commit-info.outputs.title }}' against thresholds
+      - name: "Compare ${{ steps.commit-info.outputs.title }} against thresholds"
         id: comparison
         env:
           TITLE: ${{ steps.commit-info.outputs.title }}
