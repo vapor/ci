@@ -39,7 +39,7 @@ jobs:
       # actions/cache will detect zstd and will become much faster.
       - name: Install jemalloc, zstd, curl and jq
         run: |
-          apt update -q && apt install -yq libjemalloc-dev zstd curl jq
+          apt-get update -q && apt-get install -yq libjemalloc-dev zstd curl jq
 
       - name: Find commit info
         id: commit-info
