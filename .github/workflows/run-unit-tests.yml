@@ -157,17 +157,16 @@ jobs:
         shell: bash
         run: |
           set -ex
-          echo "matrix=$(jq -nc --arg with_release "${RELEASE_TESTING}" "$(cat <<'EOI'
-            { "swift-config": [
+          echo "matrix=$(jq -nc --arg with_release "${RELEASE_TESTING}" '
+            { "swift-config": (([
               { "image": "swift:6.1-noble", "build-mode": "debug" },
               { "image": "swift:6.2-noble", "build-mode": "debug" },
               { "image": "swift:6.3-noble", "build-mode": "debug" },
               { "image": "swiftlang/swift:nightly-main-noble", "build-mode": "debug" }
-            ] | if $with_release == "1" then . + [
+            ]) | (if $with_release == "1" then (. + [
               { "image": "swift:6.3-noble", "build-mode": "release" }
-            ] else . end }
-          EOI
-          )")" >> "${GITHUB_OUTPUT}"
+            ]) else . end)) }
+          ')" >> "${GITHUB_OUTPUT}"
     
   linux-unit:
     if: ${{ !(github.event.pull_request.draft || false) }}
