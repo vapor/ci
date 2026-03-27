@@ -150,23 +150,35 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.gen-matrix.outputs.matrix }}
-    env:
-      RELEASE_TESTING: ${{ inputs.with_release_mode_testing && '1' || '0' }}
     steps:
+      - uses: actions/checkout@v6
+      - id: check-swift-minus-2
+        uses: vapor/ci/.github/actions/check-compatible-swift@main
+        with: { package_root: "${{ inputs.package_root }}", assume_installed_version: "6.1.3" }
+      - id: check-swift-minus-1
+        uses: vapor/ci/.github/actions/check-compatible-swift@main
+        with: { package_root: "${{ inputs.package_root }}", assume_installed_version: "6.2.4" }
+      - id: check-swift-current
+        uses: vapor/ci/.github/actions/check-compatible-swift@main
+        with: { package_root: "${{ inputs.package_root }}", assume_installed_version: "6.3.0" }
       - id: gen-matrix
         shell: bash
+        env:
+          RELTST: ${{ inputs.with_release_mode_testing && '1' || '0' }}
+          SMIN2: ${{ steps.check-swift-minus-2.outputs.swift-compatible == 'true' && 1 || 0 }}
+          SMIN1: ${{ steps.check-swift-minus-1.outputs.swift-compatible == 'true' && 1 || 0 }}
+          SCURR: ${{ steps.check-swift-current.outputs.swift-compatible == 'true' && 1 || 0 }}
         run: |
           set -e
-          echo "matrix=$(jq -nc --arg with_release "${RELEASE_TESTING}" '
-            { "swift-config": (([
-              { "image": "swift:6.1-noble", "build-mode": "debug" },
-              { "image": "swift:6.2-noble", "build-mode": "debug" },
-              { "image": "swift:6.3-noble", "build-mode": "debug" },
-              { "image": "swiftlang/swift:nightly-main-noble", "build-mode": "debug" }
-            ]) | (if $with_release == "1" then (. + [
-              { "image": "swift:6.3-noble", "build-mode": "release" }
-            ]) else . end)) }
-          ')" >> "${GITHUB_OUTPUT}"
+          echo "matrix=$(jq -nc \
+            --arg rltst "${RELTST}" --arg sm2 "${SMIN2}" --arg sm1 "${SMIN1}" --arg scr "${SCURR}" \
+            '{"swift-config": (
+              (if $sm2 == "1" then                   [{ image: "swift:6.1-noble", "build-mode": "debug" }] else [] end) +
+              (if $sm1 == "1" then                   [{ image: "swift:6.2-noble", "build-mode": "debug" }] else [] end) +
+              (if $scr == "1" then                   [{ image: "swift:6.3-noble", "build-mode": "debug" }] else [] end) +
+              (if $scr == "1" and $rltst == "1" then [{ image: "swift:6.3-noble", "build-mode": "release" }] else [] end) +
+                                                     [{ image: "swiftlang/swift:nightly-main-noble", "build-mode": "debug" }]
+            )}')" >> "${GITHUB_OUTPUT}"
     
   linux-unit:
     if: ${{ !(github.event.pull_request.draft || false) }}
@@ -182,19 +194,13 @@ jobs:
         run: apt-get update -yq && apt-get install -y curl zstd
       - name: Check out code
         uses: actions/checkout@v6
-      - name: Check Swift compatibility
-        id: swift-check
-        uses: vapor/ci/.github/actions/check-compatible-swift@main
-        with: { package_root: "${{ inputs.package_root }}" }
       - name: Cache .build
-        if: steps.swift-check.outputs.swift-compatible == 'true'
         uses: actions/cache@v5
         with:
           path: "${{ inputs.package_root || '.' }}/.build"
           key: "${{ matrix.swift-config.image }}-${{ matrix.swift-config.build-mode }}-build-${{ runner.os }}-${{ github.event.pull_request.base.sha || github.event.after }}"
           restore-keys: "${{ matrix.swift-config.image }}-${{ matrix.swift-config.build-mode }}-build-${{ runner.os }}-"
       - name: Run unit tests
-        if: steps.swift-check.outputs.swift-compatible == 'true'
         run: |
           swift test \
             -c ${{ matrix.swift-config.build-mode }} \
@@ -206,7 +212,7 @@ jobs:
             ${ENABLE_ALL_TRAITS} \
             ${EXTRA_FLAGS}
       - name: Upload coverage data
-        if: inputs.with_coverage && steps.swift-check.outputs.swift-compatible == 'true'
+        if: inputs.with_coverage
         uses: vapor/swift-codecov-action@v0.3
         with:
           codecov_token:    ${{ secrets.CODECOV_TOKEN || '' }}
@@ -404,7 +410,12 @@ jobs:
         run: sudo apt-get update -yq && sudo apt-get install -yq zstd
       - name: Check out code
         uses: actions/checkout@v6
+      - name: Check Swift compatibility
+        id: swift-check
+        uses: vapor/ci/.github/actions/check-compatible-swift@main
+        with: { package_root: "${{ inputs.package_root }}", assume_installed_version: "${{ matrix.swift-version }}" }
       - name: Run unit tests
+        if: steps.swift-check.outputs.swift-compatible == 'true'
         uses: skiptools/swift-android-action@v2
         with:
           swift-version: ${{ matrix.swift-version }}
