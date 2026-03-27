@@ -8,7 +8,7 @@ inputs:
     description: >
       Provides a mechanism to override the path assumed to contain the package to check.
     default: ''
-  assume-installed-version:
+  assume_installed_version:
     description: >
       Override the result of swift package --version. Only use this if you are not in control of the installed Swift version (such as when running Android tests). Ignored if the runner OS is Windows.
     default: ''
@@ -27,7 +27,7 @@ runs:
       if: ${{ runner.os != 'Windows' }}
       env:
         PACKAGE_ROOT: ${{ inputs.package_root != '' && format('--package-path={0}', inputs.package_root) || '' }}
-        OVERRIDE_TOOLCHAIN_VER: ${{ inputs.assume-installed-version }}
+        OVERRIDE_TOOLCHAIN_VER: ${{ inputs.assume_installed_version }}
       shell: bash
       run: |
         function parse_version() { \
