@@ -156,7 +156,7 @@ jobs:
       - id: gen-matrix
         shell: bash
         run: |
-          set -ex
+          set -e
           echo "matrix=$(jq -nc --arg with_release "${RELEASE_TESTING}" '
             { "swift-config": (([
               { "image": "swift:6.1-noble", "build-mode": "debug" },
@@ -182,13 +182,19 @@ jobs:
         run: apt-get update -yq && apt-get install -y curl zstd
       - name: Check out code
         uses: actions/checkout@v6
+      - name: Check Swift compatibility
+        id: swift-check
+        uses: vapor/ci/.github/actions/check-compatible-swift@main
+        with: { package_root: "${{ inputs.package_root }}" }
       - name: Cache .build
+        if: steps.swift-check.outputs.swift-compatible == 'true'
         uses: actions/cache@v5
         with:
           path: "${{ inputs.package_root || '.' }}/.build"
           key: "${{ matrix.swift-config.image }}-${{ matrix.swift-config.build-mode }}-build-${{ runner.os }}-${{ github.event.pull_request.base.sha || github.event.after }}"
           restore-keys: "${{ matrix.swift-config.image }}-${{ matrix.swift-config.build-mode }}-build-${{ runner.os }}-"
       - name: Run unit tests
+        if: steps.swift-check.outputs.swift-compatible == 'true'
         run: |
           swift test \
             -c ${{ matrix.swift-config.build-mode }} \
@@ -200,7 +206,7 @@ jobs:
             ${ENABLE_ALL_TRAITS} \
             ${EXTRA_FLAGS}
       - name: Upload coverage data
-        if: inputs.with_coverage
+        if: inputs.with_coverage && steps.swift-check.outputs.swift-compatible == 'true'
         uses: vapor/swift-codecov-action@v0.3
         with:
           codecov_token:    ${{ secrets.CODECOV_TOKEN || '' }}
@@ -226,13 +232,19 @@ jobs:
           xcode-version: ${{ matrix.xcode-version }}
       - name: Check out code
         uses: actions/checkout@v6
+      - name: Check Swift compatibility
+        id: swift-check
+        uses: vapor/ci/.github/actions/check-compatible-swift@main
+        with: { package_root: "${{ inputs.package_root }}" }
       - name: Cache .build
+        if: steps.swift-check.outputs.swift-compatible == 'true'
         uses: actions/cache@v5
         with:
           path: "${{ inputs.package_root || '.' }}/.build"
           key: "${{ matrix.xcode-version }}-${{ matrix.macos-version }}-build-${{ runner.os }}-${{ github.event.pull_request.base.sha || github.event.after }}"
           restore-keys: "${{ matrix.xcode-version }}-${{ matrix.macos-version }}-build-${{ runner.os }}-"
       - name: Run unit tests
+        if: steps.swift-check.outputs.swift-compatible == 'true'
         run: |
           swift test \
             ${PACKAGE_ROOT} \
@@ -242,7 +254,7 @@ jobs:
             ${ENABLE_ALL_TRAITS} \
             ${EXTRA_FLAGS}
       - name: Upload coverage data
-        if: inputs.with_coverage
+        if: inputs.with_coverage && steps.swift-check.outputs.swift-compatible == 'true'
         uses: vapor/swift-codecov-action@v0.3
         with:
           codecov_token:    ${{ secrets.CODECOV_TOKEN || '' }}
@@ -273,13 +285,19 @@ jobs:
           update-sdk-modules: true
       - name: Check out code
         uses: actions/checkout@v6
+      - name: Check Swift compatibility
+        id: swift-check
+        uses: vapor/ci/.github/actions/check-compatible-swift@main
+        with: { package_root: "${{ inputs.package_root }}" }
       - name: Cache .build
+        if: steps.swift-check.outputs.swift-compatible == 'true'
         uses: actions/cache@v5
         with:
           path: "${{ inputs.package_root || '.' }}/.build"
           key: "${{ matrix.swift-tag }}-build-${{ runner.os }}-${{ github.event.pull_request.base.sha || github.event.after }}"
           restore-keys: "${{ matrix.swift-tag }}-build-${{ runner.os }}-"
       - name: Run unit tests
+        if: steps.swift-check.outputs.swift-compatible == 'true'
         run: |
           $params = @();
           $params += ($env:WARNINGS_AS_ERRORS -split ' ');
