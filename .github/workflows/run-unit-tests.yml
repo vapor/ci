@@ -157,7 +157,6 @@ jobs:
         shell: bash
         run: |
           set -ex
-          jq --version
           echo "matrix=$(jq -nc --arg with_release "${RELEASE_TESTING}" "$(cat <<'EOI'
             { "swift-config": [
               { "image": "swift:6.1-noble", "build-mode": "debug" },
@@ -168,7 +167,7 @@ jobs:
               { "image": "swift:6.3-noble", "build-mode": "release" }
             ] else . end }
           EOI
-          )" >> "${GITHUB_OUTPUT}"
+          )")" >> "${GITHUB_OUTPUT}"
     
   linux-unit:
     if: ${{ !(github.event.pull_request.draft || false) }}
