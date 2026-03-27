@@ -156,6 +156,8 @@ jobs:
       - id: gen-matrix
         shell: bash
         run: |
+          set -e
+          echo $BASH_VERSION
           echo "matrix=$(jq -nc --arg with_release "${RELEASE_TESTING}" '{ "swift-config": [
               { "image": "swift:6.1-noble", "build-mode": "debug" },
               { "image": "swift:6.2-noble", "build-mode": "debug" },
