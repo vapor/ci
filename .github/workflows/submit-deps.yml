@@ -20,6 +20,6 @@ jobs:
       - name: Fix Git configuration
         run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Submit dependency graph
-        uses: vapor-community/swift-dependency-submission@main
+        uses: vapor-community/swift-dependency-submission@b3073f8c070033ab550b2e02d90d9ff1e426f123 # v0.2.0
         with:
           path: ${{ inputs.package_root != '' && inputs.package_root || github.workspace }}
