@@ -213,7 +213,7 @@ jobs:
             ${EXTRA_FLAGS}
       - name: Upload coverage data
         if: inputs.with_coverage
-        uses: vapor/swift-codecov-action@v0.3
+        uses: vapor/swift-codecov-action@d5ea9e9f9fbf6cd7694e19240400288b034e3a08 # v0.3.4
         with:
           codecov_token:    ${{ secrets.CODECOV_TOKEN || '' }}
           package_path:     ${{ inputs.package_root }}
@@ -233,7 +233,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Select appropriate Xcode version
-        uses: maxim-lobanov/setup-xcode@v1
+        uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
         with:
           xcode-version: ${{ matrix.xcode-version }}
       - name: Check out code
@@ -261,7 +261,7 @@ jobs:
             ${EXTRA_FLAGS}
       - name: Upload coverage data
         if: inputs.with_coverage && steps.swift-check.outputs.swift-compatible == 'true'
-        uses: vapor/swift-codecov-action@v0.3
+        uses: vapor/swift-codecov-action@d5ea9e9f9fbf6cd7694e19240400288b034e3a08 # v0.3.4
         with:
           codecov_token:    ${{ secrets.CODECOV_TOKEN || '' }}
           package_path:     ${{ inputs.package_root }}
@@ -284,7 +284,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Install Windows Swift toolchain
-        uses: compnerd/gha-setup-swift@main
+        uses: compnerd/gha-setup-swift@eeda069c5bc95ac8a9ac5cea7d4f588ae5420ca5 # v0.4.0
         with:
           swift-version: ${{ matrix.swift-branch }}
           swift-build: ${{ matrix.swift-tag }}
@@ -316,7 +316,7 @@ jobs:
     runs-on: macos-26
     steps:
       - name: Select appropriate Xcode version
-        uses: maxim-lobanov/setup-xcode@v1
+        uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
         with:
           xcode-version: latest-stable
       - name: Check out code
@@ -416,7 +416,7 @@ jobs:
         with: { package_root: "${{ inputs.package_root }}", assume_installed_version: "${{ matrix.swift-version }}" }
       - name: Run unit tests
         if: steps.swift-check.outputs.swift-compatible == 'true'
-        uses: skiptools/swift-android-action@v2
+        uses: skiptools/swift-android-action@35cd37f3e970b397d141f8e97aa34785b8a4e3f7 # v2.9.2
         with:
           swift-version: ${{ matrix.swift-version }}
           copy-files: ${{ inputs.android_copy_files }}
