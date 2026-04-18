@@ -33,7 +33,7 @@ jobs:
 
     steps:
       - name: Configure RunsOn
-        uses: runs-on/action@v2
+        uses: runs-on/action@742bf56072eb4845a0f94b3394673e4903c90ff0 # v2.1.0
 
       # jemalloc is a dependency of the Benchmarking package
       # actions/cache will detect zstd and will become much faster.
@@ -99,7 +99,7 @@ jobs:
 
       - name: Comment in PR
         if: steps.commit-info.outputs.pr_number != ''
-        uses: thollander/actions-comment-pull-request@v3
+        uses: thollander/actions-comment-pull-request@24bffb9b452ba05a4f3f77933840a6a841d1b32b # v3.0.1
         with:
           pr-number: ${{ steps.commit-info.outputs.pr_number }}
           file-path: in-progress-comment.md
@@ -115,10 +115,9 @@ jobs:
       - name: Configure git
         run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
 
-      - name: Restore .build
+      - name: Cache .build as needed
         if: ${{ runner.debug != '1' }}
-        id: restore-cache
-        uses: actions/cache/restore@v5
+        uses: actions/cache@v5
         with:
           path: Benchmarks/.build
           key: "swiftpm-benchmark-build-${{ runner.os }}-${{ steps.commit-info.outputs.sha }}"
@@ -164,13 +163,6 @@ jobs:
           echo "exit-status=$?" >> "${GITHUB_OUTPUT}"
           set -e
 
-      - name: Cache .build
-        if: ${{ runner.debug != '1' && steps.restore-cache.outputs.cache-hit != 'true' }}
-        uses: actions/cache/save@v5
-        with:
-          path: Benchmarks/.build
-          key: "swiftpm-benchmark-build-${{ runner.os }}-${{ steps.commit-info.outputs.sha }}"
-
       - name: Construct result comment
         env:
           MD_LINK: ${{ steps.commit-info.outputs.md_link }}
@@ -191,7 +183,7 @@ jobs:
       - name: Update comment in PR
         if: steps.commit-info.outputs.pr_number != ''
         id: pr-comment
-        uses: thollander/actions-comment-pull-request@v3
+        uses: thollander/actions-comment-pull-request@24bffb9b452ba05a4f3f77933840a6a841d1b32b # v3.0.1
         with:
           pr-number: ${{ steps.commit-info.outputs.pr_number }}
           file-path: comment.md
