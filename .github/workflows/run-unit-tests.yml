@@ -177,6 +177,7 @@ jobs:
               (if $sm1 == "1" then                   [{ image: "swift:6.2-noble", "build-mode": "debug" }] else [] end) +
               (if $scr == "1" then                   [{ image: "swift:6.3-noble", "build-mode": "debug" }] else [] end) +
               (if $scr == "1" and $rltst == "1" then [{ image: "swift:6.3-noble", "build-mode": "release" }] else [] end)
+                                                  #+ [{ image: "swiftlang/swift:nightly-main-noble", "build-mode": "debug" }]
             )}')" >> "${GITHUB_OUTPUT}"
     
   linux-unit:
