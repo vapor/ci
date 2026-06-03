@@ -416,7 +416,7 @@ jobs:
         with: { package_root: "${{ inputs.package_root }}", assume_installed_version: "${{ matrix.swift-version }}" }
       - name: Run unit tests
         if: steps.swift-check.outputs.swift-compatible == 'true'
-        uses: skiptools/swift-android-action@8db781febb546110d48dee035131db8f4e259e91 # v2.9.4
+        uses: skiptools/swift-android-action@2044b79660f201ccef8cbce62877e4ec5409f9c8 # v2.9.5
         with:
           swift-version: ${{ matrix.swift-version }}
           copy-files: ${{ inputs.android_copy_files }}
