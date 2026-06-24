@@ -119,7 +119,7 @@ jobs:
     steps:
       - { name: Check out code, uses: actions/checkout@v6, with: { 'fetch-depth': 0 } }
       - name: Restore API baseline
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@v6
         with:
           path: ${{ env.BASELINES }}
           # N.B.: Do not use restore-keys to restore a different api-breakage cache; the result will be a comparison against
@@ -140,7 +140,7 @@ jobs:
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
           swift package ${PACKAGE_ROOT} diagnose-api-breaking-changes --baseline-dir=${BASELINES} --regenerate-baseline origin/main
       - name: Cache API baseline
-        uses: actions/cache/save@v5
+        uses: actions/cache/save@v6
         with:
           path: ${{ env.BASELINES }}
           key: api-breakage-${{ github.sha }}
@@ -195,7 +195,7 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v7
       - name: Cache .build
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: "${{ inputs.package_root || '.' }}/.build"
           key: "${{ matrix.swift-config.image }}-${{ matrix.swift-config.build-mode }}-build-${{ runner.os }}-${{ github.event.pull_request.base.sha || github.event.after }}"
@@ -244,7 +244,7 @@ jobs:
         with: { package_root: "${{ inputs.package_root }}" }
       - name: Cache .build
         if: steps.swift-check.outputs.swift-compatible == 'true'
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: "${{ inputs.package_root || '.' }}/.build"
           key: "${{ matrix.xcode-version }}-${{ matrix.macos-version }}-build-${{ runner.os }}-${{ github.event.pull_request.base.sha || github.event.after }}"
@@ -297,7 +297,7 @@ jobs:
         with: { package_root: "${{ inputs.package_root }}" }
       - name: Cache .build
         if: steps.swift-check.outputs.swift-compatible == 'true'
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: "${{ inputs.package_root || '.' }}/.build"
           key: "${{ matrix.swift-tag }}-build-${{ runner.os }}-${{ github.event.pull_request.base.sha || github.event.after }}"
