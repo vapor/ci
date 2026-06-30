@@ -117,7 +117,9 @@ jobs:
     runs-on: ubuntu-latest
     container: swift:noble
     steps:
-      - { name: Check out code, uses: actions/checkout@v6, with: { 'fetch-depth': 0 } }
+      - name: Check out code
+        uses: actions/checkout@v7
+        with: { 'fetch-depth': 0 }
       - name: Restore API baseline
         uses: actions/cache/restore@v6
         with:
@@ -128,17 +130,19 @@ jobs:
       - name: Run API breakage check
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
-          swift package ${PACKAGE_ROOT} diagnose-api-breaking-changes --baseline-dir=${BASELINES} origin/main
+          swift package ${PACKAGE_ROOT} diagnose-api-breaking-changes --baseline-dir=${BASELINES} "origin/${GITHUB_BASE_REF}"
   api-breakage-baseline:
-    if: ${{ inputs.with_api_check && github.event_name == 'push' && github.ref_name == 'main' }}
+    if: ${{ inputs.with_api_check && github.event_name == 'push' }}
     runs-on: ubuntu-latest
     container: swift:noble
     steps:
-      - { name: Check out code, uses: actions/checkout@v6, with: { 'fetch-depth': 0 } }
+      - name: Check out code
+        uses: actions/checkout@v7
+        with: { 'fetch-depth': 0 }
       - name: Regenerate API breakage baseline
         run: |
           git config --global --add safe.directory "${GITHUB_WORKSPACE}"
-          swift package ${PACKAGE_ROOT} diagnose-api-breaking-changes --baseline-dir=${BASELINES} --regenerate-baseline origin/main
+          swift package ${PACKAGE_ROOT} diagnose-api-breaking-changes --baseline-dir=${BASELINES} --regenerate-baseline "origin/${GITHUB_REF_NAME}"
       - name: Cache API baseline
         uses: actions/cache/save@v6
         with:
@@ -160,7 +164,7 @@ jobs:
         with: { package_root: "${{ inputs.package_root }}", assume_installed_version: "6.2.4" }
       - id: check-swift-current
         uses: vapor/ci/.github/actions/check-compatible-swift@15f8aff92cac6deb62a9f5891606a3167d76df28
-        with: { package_root: "${{ inputs.package_root }}", assume_installed_version: "6.3.0" }
+        with: { package_root: "${{ inputs.package_root }}", assume_installed_version: "6.3.2" }
       - id: gen-matrix
         shell: bash
         env:
