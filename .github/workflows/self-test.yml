@@ -48,11 +48,6 @@ on:
         required: false
         default: 'sample-testable-package-Package'
         description: "Set to the scheme name in Xcode to run tests on iOS. Defaults to 'sample-testable-package', use '' to not run any tests."
-      with_foundation_check:
-        type: boolean
-        required: false
-        default: true
-        description: "Set to 'true' to check that the package's library products do not link against Foundation or ICU. Defaults to 'true'."
   pull_request: { branches: [ main ] }
   push: { branches: [ main ] }
 concurrency:
@@ -76,7 +71,9 @@ jobs:
       with_wasm: ${{ inputs.with_platform == 'all' || inputs.with_platform == 'wasm' || true }}
       with_android: ${{ inputs.with_platform == 'all' || inputs.with_platform == 'android'|| true }}
       ios_scheme_name: ${{ inputs.ios_scheme_name || 'sample-testable-package-Package' }}
-      with_foundation_check: ${{ inputs.with_foundation_check || true }}
+
+  call-foundation-check-workflow:
+    uses: ./.github/workflows/check-foundation-linking.yml
 
   call-deps-workflow:
     uses: ./.github/workflows/submit-deps.yml
