@@ -12,6 +12,11 @@ on:
         required: false
         default: 'swift:noble'
         description: "Container image providing the Swift toolchain for the check. Defaults to 'swift:noble'. Use a nightly image (e.g. 'swiftlang/swift:nightly-main-noble') for packages requiring a newer Swift such as 6.4."
+      excluded_products:
+        type: string
+        required: false
+        default: ''
+        description: "Space-separated list of library products to exclude from the check, for products that are allowed to link Foundation (e.g. 'VaporTesting'). Defaults to none."
 permissions:
   contents: read
 
@@ -23,6 +28,7 @@ jobs:
     timeout-minutes: 30
     env:
       PACKAGE_PATH: ${{ inputs.package_root || '.' }}
+      EXCLUDED_PRODUCTS: ${{ inputs.excluded_products }}
     steps:
       - name: Install linux dependencies
         run: apt-get update -yq && apt-get install -yq jq
@@ -41,7 +47,9 @@ jobs:
           description="$(swift package --package-path "${package_dir}" describe --type json)"
           package_name="$(echo "${description}" | jq -r .name)"
           tools_version="$(swift package --package-path "${package_dir}" tools-version)"
-          products="$(echo "${description}" | jq -r '.products[] | select(.type | has("library")) | .name')"
+          products="$(echo "${description}" | jq -r --arg excluded "${EXCLUDED_PRODUCTS}" \
+            '($excluded | split(" ")) as $excl | .products[]
+             | select(.type | has("library")) | select(.name as $name | $excl | index($name) | not) | .name')"
           if [ -z "${products}" ]; then
             fatal "Package '${package_name}' has no library products to check."
           fi
