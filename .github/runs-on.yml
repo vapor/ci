@@ -5,7 +5,7 @@ runners:
     cpu: 2
     ram: 4
     family: ["c8g"]
-    hdd: 40
+    volume: 30gb:gp3:400mbps
     image: ubuntu24-full-arm64
     extras: s3-cache
     spot: lowest-price
