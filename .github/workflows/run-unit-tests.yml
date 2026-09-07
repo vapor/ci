@@ -288,7 +288,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Install Windows Swift toolchain
-        uses: compnerd/gha-setup-swift@eeda069c5bc95ac8a9ac5cea7d4f588ae5420ca5 # v0.4.0
+        uses: compnerd/gha-setup-swift@397094e75494a93fa8d81db0268dbc8f5d6cf7c6 # v0.4.1
         with:
           swift-version: ${{ matrix.swift-branch }}
           swift-build: ${{ matrix.swift-tag }}
