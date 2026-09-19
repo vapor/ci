@@ -365,6 +365,7 @@ jobs:
       - name: Install linux dependencies
         run: apt-get update && apt-get install -y curl jq
       - name: Install SDK
+        shell: bash
         run: |
           version_num="$(swiftc --version | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -1)"
           if [[ -z "${version_num/???/}" ]]; then
@@ -391,6 +392,7 @@ jobs:
       - name: Install linux dependencies
         run: apt-get update -y -q && apt-get install -y -q curl jq
       - name: Install SDK
+        shell: bash
         run: |
           #tag="$(swiftc --version | grep -Po '(?<=\().+(?=\))')"
           version_num="$(swiftc --version | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -1)"
