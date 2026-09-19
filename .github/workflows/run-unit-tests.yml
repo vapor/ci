@@ -422,7 +422,7 @@ jobs:
         swift-version:
           - 6.2
           - 6.3
-          - 6.4
+          #- 6.4 # awaiting upstream support
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
