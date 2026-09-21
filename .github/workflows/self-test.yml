@@ -57,6 +57,15 @@ permissions:
   contents: write
 
 jobs:
+  benchmark-configurations:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - name: Test native benchmark configurations
+        run: bash .github/tests/benchmark.sh
+
   call-workflow:
     uses: ./.github/workflows/run-unit-tests.yml
     with:
