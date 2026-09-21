@@ -9,11 +9,24 @@ on:
         type: string
         required: false
         description: "The commit SHA to run the benchmarks against. Will use current ref if not provided."
+      swift_image:
+        type: string
+        default: swift:noble
+        description: "The Swift container image used for builds and measurements."
+      benchmark_driver:
+        type: string
+        default: ""
+        description: "Optional executable in the checkout accepting benchmark baseline/thresholds commands."
+      thresholds_mode:
+        type: string
+        default: check
+        description: "check compares committed thresholds; record exports them; bootstrap records only when none exist."
 permissions:
   contents: read
   id-token: write
 env:
   RUN_LINK: "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+  BENCHMARK_DRIVER: ${{ inputs.benchmark_driver }}
   CHECK_NAME: "benchmark / benchmark-vs-thresholds"
 
 jobs:
@@ -21,7 +34,7 @@ jobs:
     # https://runs-on.com/features/custom-runners/
     runs-on: runs-on=${{ github.run_id }}/runner=2cpu-4ram
     container:
-      image: swift:noble
+      image: ${{ inputs.swift_image }}
       options: --privileged
     
     env:
@@ -39,9 +52,23 @@ jobs:
 
       # jemalloc is a dependency of the Benchmarking package
       # actions/cache will detect zstd and will become much faster.
-      - name: Install jemalloc, zstd, curl and jq
+      - name: Install jemalloc, zstd, curl, jq and Python
         run: |
-          apt-get update -q && apt-get install -yq libjemalloc-dev zstd curl jq
+          apt-get update -q && apt-get install -yq libjemalloc-dev zstd curl jq python3
+
+      - name: Configure benchmark command
+        run: |
+          cat > "${RUNNER_TEMP}/run-benchmark" <<'SCRIPT'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          if [[ -n "${BENCHMARK_DRIVER}" ]]; then
+            exec "${GITHUB_WORKSPACE}/${BENCHMARK_DRIVER}" "$@"
+          else
+            exec swift package -c release --disable-sandbox \
+              --package-path Benchmarks benchmark "$@"
+          fi
+          SCRIPT
+          chmod +x "${RUNNER_TEMP}/run-benchmark"
 
       - name: Find commit info
         id: commit-info
@@ -114,6 +141,25 @@ jobs:
           ref: "${{ steps.commit-info.outputs.ref }}"
           fetch-depth: 0
 
+      - name: Select threshold operation
+        id: threshold-operation
+        env:
+          MODE: ${{ inputs.thresholds_mode }}
+        run: |
+          case "${MODE}" in
+            check) RECORD=false ;;
+            record) RECORD=true ;;
+            bootstrap)
+              if [[ -n "$(find Benchmarks/Thresholds -name '*.p90.json' -print -quit 2>/dev/null)" ]]; then
+                RECORD=false
+              else
+                RECORD=true
+              fi
+              ;;
+            *) echo "Unknown thresholds_mode: ${MODE}" >&2; exit 1 ;;
+          esac
+          echo "record=${RECORD}" >> "${GITHUB_OUTPUT}"
+
       - name: Configure git
         run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
 
@@ -122,30 +168,27 @@ jobs:
         uses: actions/cache@v6
         with:
           path: Benchmarks/.build
-          key: "swiftpm-benchmark-build-${{ runner.os }}-${{ steps.commit-info.outputs.sha }}"
-          restore-keys: "swiftpm-benchmark-build-${{ runner.os }}-"
+          key: "swiftpm-benchmark-v2-${{ runner.os }}-${{ runner.arch }}-${{ inputs.swift_image }}-${{ hashFiles(inputs.benchmark_driver) }}-${{ steps.commit-info.outputs.sha }}"
+          restore-keys: "swiftpm-benchmark-v2-${{ runner.os }}-${{ runner.arch }}-${{ inputs.swift_image }}-${{ hashFiles(inputs.benchmark_driver) }}-"
 
       - name: "Run benchmarks for ${{ steps.commit-info.outputs.title }}"
         env:
           TITLE: ${{ steps.commit-info.outputs.title }}
         run: |
-          swift package -c release --disable-sandbox \
-            --package-path Benchmarks \
-            benchmark baseline update \
+          "${RUNNER_TEMP}/run-benchmark" baseline update \
             "${TITLE}"
 
       - name: Read benchmark result
         env:
           TITLE: ${{ steps.commit-info.outputs.title }}
         run: |
-          swift package -c release --disable-sandbox \
-            --package-path Benchmarks \
-            benchmark baseline read \
+          "${RUNNER_TEMP}/run-benchmark" baseline read \
             "${TITLE}" \
             --format markdown \
             | tee -a benchmark.md
 
       - name: "Compare ${{ steps.commit-info.outputs.title }} against thresholds"
+        if: steps.threshold-operation.outputs.record != 'true'
         id: comparison
         env:
           TITLE: ${{ steps.commit-info.outputs.title }}
@@ -155,9 +198,7 @@ jobs:
 
           # Disable 'set -e' to prevent the script from exiting on non-zero exit codes
           set +e
-          swift package -c release --disable-sandbox \
-            --package-path Benchmarks \
-            benchmark thresholds check \
+          "${RUNNER_TEMP}/run-benchmark" thresholds check \
            "${TITLE}" \
             --path "Benchmarks/Thresholds/" \
             --format markdown \
@@ -165,22 +206,60 @@ jobs:
           echo "exit-status=$?" >> "${GITHUB_OUTPUT}"
           set -e
 
+      - name: Record thresholds for review
+        if: steps.threshold-operation.outputs.record == 'true'
+        env:
+          TITLE: ${{ steps.commit-info.outputs.title }}
+        run: |
+          "${RUNNER_TEMP}/run-benchmark" thresholds update "${TITLE}" \
+            --path "Benchmarks/Thresholds/"
+          echo 'Thresholds were recorded on this runner. Download the benchmark-thresholds artifact, review the values, and commit them before enabling threshold checks.' > comparison.md
+
+      - name: Upload recorded thresholds
+        if: steps.threshold-operation.outputs.record == 'true'
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: benchmark-thresholds
+          path: Benchmarks/Thresholds/
+          if-no-files-found: error
+
+      - name: Upload full benchmark reports
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: benchmark-reports
+          path: |
+            benchmark.md
+            comparison.md
+          if-no-files-found: error
+
       - name: Construct result comment
         env:
           MD_LINK: ${{ steps.commit-info.outputs.md_link }}
-          STATUS: ${{ steps.comparison.outputs.exit-status }}
+          STATUS: ${{ steps.threshold-operation.outputs.record == 'true' && 'recorded' || steps.comparison.outputs.exit-status }}
         run: |
           echo "## [Benchmark](${RUN_LINK}) Report for ${MD_LINK}" | tee -a comment.md
           case "${STATUS}" in
+              recorded) echo '**Thresholds recorded for review; no performance comparison was performed.**' | tee -a comment.md ;;
               0) echo '**✅ Pull request has no significant performance differences ✅**' | tee -a comment.md ;;
               1) echo '**❓ Pull request has significant performance differences 📊**' | tee -a comment.md ;;
               2) echo '**❌ Pull request has significant performance regressions 📉**' | tee -a comment.md ;;
               4) echo '**⚠️ Pull request has significant performance improvements 📈**' | tee -a comment.md ;;
-              *) echo '**🚫 Benchmark comparison failed with unknown exit code ${STATUS} 🚫**' | tee -a comment.md ;;
+              *) echo "**🚫 Benchmark comparison failed with unknown exit code ${STATUS} 🚫**" | tee -a comment.md ;;
           esac
 
-          printf '<details>\n  <summary>Click to expand comparison result</summary>\n\n%s\n\n</details>\n\n' "$(cat comparison.md)" | tee -a comment.md
-          printf '<details>\n  <summary>Click to expand benchmark result</summary>\n\n%s\n\n</details>\n\n' "$(cat benchmark.md)" | tee -a comment.md
+          # Large suites can exceed GitHub's 65,536-character comment limit.
+          # Keep full reports in the artifact.
+          python3 - <<'PYTHON'
+          from pathlib import Path
+          for name in ("comparison", "benchmark"):
+              report = Path(f"{name}.md").read_text()
+              if len(report) > 20000:
+                  report = report[:20000].rsplit("\n", 1)[0] + "\n\nReport truncated. Download benchmark-reports from the linked run for the full results.\n"
+              Path(f"{name}-comment.md").write_text(report)
+          PYTHON
+
+          printf '<details>\n  <summary>Click to expand comparison result</summary>\n\n%s\n\n</details>\n\n' "$(cat comparison-comment.md)" | tee -a comment.md
+          printf '<details>\n  <summary>Click to expand benchmark result</summary>\n\n%s\n\n</details>\n\n' "$(cat benchmark-comment.md)" | tee -a comment.md
 
       - name: Update comment in PR
         if: steps.commit-info.outputs.pr_number != ''
@@ -203,7 +282,7 @@ jobs:
           fi
 
       - name: Update commit status
-        if: steps.commit-info.outputs.pr_number != ''
+        if: steps.commit-info.outputs.pr_number != '' && steps.threshold-operation.outputs.record != 'true'
         env:
           STATUS: ${{ steps.comparison.outputs.exit-status }}
           SHA: ${{ steps.commit-info.outputs.sha }}
@@ -226,6 +305,7 @@ jobs:
             -d "${BODY}"
 
       - name: Exit with correct status
+        if: steps.threshold-operation.outputs.record != 'true'
         env:
           STATUS: ${{ steps.comparison.outputs.exit-status }}
         run: exit "${STATUS}"
