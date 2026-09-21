@@ -218,7 +218,7 @@ jobs:
             ${EXTRA_FLAGS}
       - name: Upload coverage data
         if: inputs.with_coverage
-        uses: vapor/swift-codecov-action@855faf6b50974544c7ab3da724f49e602e43edc6 # v0.3.6
+        uses: vapor/swift-codecov-action@c93caea6600dbe3af0266a8ef6ee195c00181f04 # v0.3.7
         with:
           codecov_token:    ${{ secrets.CODECOV_TOKEN || '' }}
           package_path:     ${{ inputs.package_root }}
@@ -266,7 +266,7 @@ jobs:
             ${EXTRA_FLAGS}
       - name: Upload coverage data
         if: inputs.with_coverage && steps.swift-check.outputs.swift-compatible == 'true'
-        uses: vapor/swift-codecov-action@855faf6b50974544c7ab3da724f49e602e43edc6 # v0.3.6
+        uses: vapor/swift-codecov-action@c93caea6600dbe3af0266a8ef6ee195c00181f04 # v0.3.7
         with:
           codecov_token:    ${{ secrets.CODECOV_TOKEN || '' }}
           package_path:     ${{ inputs.package_root }}
