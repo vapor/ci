@@ -109,7 +109,8 @@ env:
   WITH_COVERAGE: ${{ inputs.with_coverage && '--enable-code-coverage' || '' }}
   IOS_SCHEME_NAME: ${{ inputs.ios_scheme_name }}
   IOS_XCODEBUILD_ACTION: ${{ inputs.ios_xcodebuild_action }}
-  ENABLE_ALL_TRAITS: ${{ inputs.enable_all_traits && '--enable-all-traits' || '' }}
+  # Avoid environment switches that dependency manifests use to enable their own traits.
+  VAPOR_CI_TRAIT_FLAGS: ${{ inputs.enable_all_traits && '--enable-all-traits' || '' }}
 
 jobs:
   api-breakage:
@@ -158,13 +159,13 @@ jobs:
       - uses: actions/checkout@v7
       - id: check-swift-minus-2
         uses: vapor/ci/.github/actions/check-compatible-swift@15f8aff92cac6deb62a9f5891606a3167d76df28
-        with: { package_root: "${{ inputs.package_root }}", assume_installed_version: "6.1.3" }
+        with: { package_root: "${{ inputs.package_root }}", assume_installed_version: "6.2.4" }
       - id: check-swift-minus-1
         uses: vapor/ci/.github/actions/check-compatible-swift@15f8aff92cac6deb62a9f5891606a3167d76df28
-        with: { package_root: "${{ inputs.package_root }}", assume_installed_version: "6.2.4" }
+        with: { package_root: "${{ inputs.package_root }}", assume_installed_version: "6.3.3" }
       - id: check-swift-current
         uses: vapor/ci/.github/actions/check-compatible-swift@15f8aff92cac6deb62a9f5891606a3167d76df28
-        with: { package_root: "${{ inputs.package_root }}", assume_installed_version: "6.3.2" }
+        with: { package_root: "${{ inputs.package_root }}", assume_installed_version: "6.4.0" }
       - id: gen-matrix
         shell: bash
         env:
@@ -213,7 +214,7 @@ jobs:
             ${WARNINGS_AS_ERRORS} \
             ${WITH_COVERAGE} \
             ${TEST_FILTER} \
-            ${ENABLE_ALL_TRAITS} \
+            ${VAPOR_CI_TRAIT_FLAGS} \
             ${EXTRA_FLAGS}
       - name: Upload coverage data
         if: inputs.with_coverage
@@ -261,7 +262,7 @@ jobs:
             ${WITH_TSAN} \
             ${WITH_COVERAGE} \
             ${TEST_FILTER} \
-            ${ENABLE_ALL_TRAITS} \
+            ${VAPOR_CI_TRAIT_FLAGS} \
             ${EXTRA_FLAGS}
       - name: Upload coverage data
         if: inputs.with_coverage && steps.swift-check.outputs.swift-compatible == 'true'
@@ -311,13 +312,13 @@ jobs:
         run: |
           $params = @();
           $params += ($env:WARNINGS_AS_ERRORS -split ' ');
-          $params += ($env:ENABLE_ALL_TRAITS -split ' ');
+          $params += ($env:VAPOR_CI_TRAIT_FLAGS -split ' ');
           $params += ($env:EXTRA_FLAGS -split ' ')
           swift test $env:PACKAGE_ROOT $env:TEST_FILTER @params
 
   ios-unit:
     if: ${{ !(github.event.pull_request.draft || false) && inputs.ios_scheme_name != '' }}
-    runs-on: macos-26
+    runs-on: xcode-27
     steps:
       - name: Select appropriate Xcode version
         uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
@@ -377,7 +378,7 @@ jobs:
           checksum="$(echo "$sdk_info" | cut -f2)"
           swift sdk install "https://download.swift.org/$(echo $tag | tr [A-Z] [a-z])/static-sdk/$tag/${tag}_static-linux-${version}.artifactbundle.tar.gz" --checksum "$checksum"
       - name: Build
-        run: swift build --swift-sdk x86_64-swift-linux-musl ${PACKAGE_PATH} ${EXTRA_FLAGS} ${EXTRA_MUSL_FLAGS} ${WARNINGS_AS_ERRORS} ${ENABLE_ALL_TRAITS}
+        run: swift build --swift-sdk x86_64-swift-linux-musl ${PACKAGE_PATH} ${EXTRA_FLAGS} ${EXTRA_MUSL_FLAGS} ${WARNINGS_AS_ERRORS} ${VAPOR_CI_TRAIT_FLAGS}
 
   wasm:
     if: ${{ !(github.event.pull_request.draft || false) && inputs.with_wasm }}
@@ -412,7 +413,7 @@ jobs:
             version_num="${version_num}.0"
           fi
           tag="swift-${version_num}-RELEASE"
-          swift build --swift-sdk "$tag"_wasm ${PACKAGE_PATH} ${EXTRA_FLAGS} ${WARNINGS_AS_ERRORS} ${ENABLE_ALL_TRAITS}
+          swift build --swift-sdk "$tag"_wasm ${PACKAGE_PATH} ${EXTRA_FLAGS} ${WARNINGS_AS_ERRORS} ${VAPOR_CI_TRAIT_FLAGS}
 
   android-unit:
     if: ${{ !(github.event.pull_request.draft || false) && inputs.with_android }}
@@ -440,5 +441,5 @@ jobs:
         with:
           swift-version: ${{ matrix.swift-version }}
           copy-files: ${{ inputs.android_copy_files }}
-          swift-build-flags: ${{ env.ENABLE_ALL_TRAITS }}
+          swift-build-flags: ${{ env.VAPOR_CI_TRAIT_FLAGS }}
           free-disk-space: true
