@@ -13,6 +13,10 @@ on:
         type: string
         default: swift:noble
         description: "The Swift container image used for builds and measurements."
+      runner_labels:
+        type: string
+        default: runner=2cpu-4ram
+        description: "RunsOn labels selecting the benchmark hardware, excluding the runs-on run ID."
       configurations:
         type: string
         default: '[{}]'
@@ -36,13 +40,14 @@ env:
   RUN_LINK: "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
   BENCHMARK_CONFIGURATIONS: ${{ inputs.configurations }}
   BENCHMARK_ENVIRONMENT: ${{ inputs.environment }}
+  BENCHMARK_RUNNER_LABELS: ${{ inputs.runner_labels }}
   VALIDATE_THRESHOLDS: ${{ inputs.validate_thresholds }}
   CHECK_NAME: "benchmark / benchmark-vs-thresholds"
 
 jobs:
   benchmark-vs-thresholds:
     # https://runs-on.com/features/custom-runners/
-    runs-on: runs-on=${{ github.run_id }}/runner=2cpu-4ram
+    runs-on: runs-on=${{ github.run_id }}/${{ inputs.runner_labels }}
     container:
       image: ${{ inputs.swift_image }}
       options: --privileged
@@ -203,7 +208,7 @@ jobs:
           BENCHMARK_SCRIPT
           chmod +x "${RUNNER_TEMP}/run-benchmark"
           "${RUNNER_TEMP}/run-benchmark" --validate
-          CONFIGURATION_HASH=$(printf '%s\n%s' "${BENCHMARK_CONFIGURATIONS}" "${BENCHMARK_ENVIRONMENT}" | sha256sum | cut -d ' ' -f 1)
+          CONFIGURATION_HASH=$(printf '%s\n%s\n%s' "${BENCHMARK_CONFIGURATIONS}" "${BENCHMARK_ENVIRONMENT}" "${BENCHMARK_RUNNER_LABELS}" | sha256sum | cut -d ' ' -f 1)
           echo "cache-key=${CONFIGURATION_HASH}" >> "${GITHUB_OUTPUT}"
 
       - name: Find commit info

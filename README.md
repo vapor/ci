@@ -11,10 +11,16 @@ need only the optional `sha` input. Additional inputs are opt-in:
 | Input | Default | Purpose |
 | --- | --- | --- |
 | `swift_image` | `swift:noble` | Pin the compiler/container used for measurements. |
+| `runner_labels` | `runner=2cpu-4ram` | RunsOn labels selecting benchmark hardware. |
 | `configurations` | `[{}]` | JSON array of named configurations; see below. |
 | `environment` | `{}` | JSON object of string-valued environment variables shared by all configurations. |
 | `validate_thresholds` | `false` | Require nonempty results and matching metric keys in committed thresholds. |
 | `record_thresholds` | `false` | Export thresholds for review instead of comparing committed thresholds. |
+
+For packages whose release builds need more memory, set
+`runner_labels: runner=2cpu-4ram/ram=8/family=m8g`. This retains the existing runner
+settings while selecting a two-CPU, 8 GB Graviton4 instance. Runner labels are part
+of the build cache key. Record and review new thresholds when changing hardware.
 
 ### Separate configurations
 
