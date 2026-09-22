@@ -71,7 +71,3 @@ Full markdown reports are uploaded as `benchmark-reports`. PR comment sections
 are capped to keep large suites within GitHub's comment size limit. A caller using
 Penny needs a `benchmark.yml` dispatch workflow accepting `sha` on its default
 branch, and the existing Penny app credentials.
-
-Run `bash .github/tests/benchmark.sh` to test configuration handling, default caller
-compatibility, threshold validation and reporting without building Swift packages.
-The self-test workflow runs these checks on every PR.
