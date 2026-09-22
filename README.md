@@ -41,8 +41,18 @@ Each configuration accepts:
   Builds use `Benchmarks/.build/BUILD`. Configurations can share a directory when
   their `swift_flags` are identical; instrumented and uninstrumented builds must
   use different directories.
+- `build_configuration`: `release` (default) or `debug`, passed through the
+  benchmark plugin's `--benchmark-build-configuration` flag for debug builds.
 - `swift_flags`: array of arguments passed to `swift package` before `benchmark`.
 - `environment`: object of string-valued variables overriding the common environment.
+
+For both release and debug measurements, use separate named entries so their
+baselines and thresholds remain independent. For example:
+
+```yaml
+configurations: >-
+  [{"name":"release"},{"name":"debug","build_configuration":"debug"}]
+```
 
 Named configurations use `ci-NAME` baselines and `Benchmarks/Thresholds/NAME`.
 One unnamed configuration, the default `[{}]`, preserves the original baseline

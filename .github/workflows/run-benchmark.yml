@@ -16,7 +16,7 @@ on:
       configurations:
         type: string
         default: '[{}]'
-        description: "JSON array of named configurations with build, swift_flags and environment fields."
+        description: "JSON array of named configurations with build, build_configuration, swift_flags and environment fields."
       environment:
         type: string
         default: '{}'
@@ -85,16 +85,17 @@ jobs:
               (.value | type == "string" and (contains("\u0000") | not)));
             type == "array" and length > 0 and
             all(.[]; type == "object" and
-              ((keys - ["name", "build", "swift_flags", "environment"]) | length == 0) and
+              ((keys - ["name", "build", "build_configuration", "swift_flags", "environment"]) | length == 0) and
               ((.name // "") | . == "" or slug) and
               ((.build // .name // "") | . == "" or slug) and
+              ((.build_configuration // "release") | . == "debug" or . == "release") and
               ((.swift_flags // []) | type == "array" and all(.[]; type == "string" and (contains("\u0000") | not))) and
               ((.environment // {}) | environment)) and
             (length == 1 or all(.[]; (.name // "") != "")) and
             ((map(.name // "") | unique | length) == length) and
             (group_by(.build // .name // "") | all(.[]; (map(.swift_flags // []) | unique | length) == 1))
           ' <<< "$configurations" >/dev/null; then
-            echo 'Invalid benchmark configurations: use unique names and identical Swift flags for shared build directories.' >&2
+            echo 'Invalid benchmark configurations: use unique names, debug/release builds and identical Swift flags for shared build directories.' >&2
             exit 30
           fi
           if ! jq -e 'type == "object" and all(to_entries[];
@@ -170,6 +171,9 @@ jobs:
               jq -j '.swift_flags[]? | ., "\u0000"' <<< "$configuration"
             )
             command+=(benchmark)
+            if [[ "$(jq -r '.build_configuration // "release"' <<< "$configuration")" == debug ]]; then
+              command+=(--benchmark-build-configuration debug)
+            fi
 
             if [[ "$category" == baseline ]]; then
               "${command[@]}" baseline "$operation" "$baseline" "$@"
