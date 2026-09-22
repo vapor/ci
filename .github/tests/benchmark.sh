@@ -79,16 +79,26 @@ for mode in instructions allocations cpu wall-clock; do
 done
 expect_status 0 bash ./run-benchmark thresholds check title --format markdown
 printf '{"mallocCountTotal":0}' > Benchmarks/Thresholds/allocations/Suite.example.p90.json
-expect_status 2 bash ./run-benchmark thresholds check title
+# Numeric comparisons, including zero references, belong to the benchmark package.
+expect_status 0 bash ./run-benchmark thresholds check title
 expect_status 0 bash ./run-benchmark thresholds update title
 rm Benchmarks/Thresholds/cpu/Suite.example.p90.json
 expect_status 30 bash ./run-benchmark thresholds check title
 expect_status 0 bash ./run-benchmark thresholds update title
 printf '{"wrongMetric":100}' > Benchmarks/Thresholds/cpu/Suite.example.p90.json
 expect_status 30 bash ./run-benchmark thresholds check title
-expect_status 30 env MOCK_VALUE=0 bash ./run-benchmark thresholds check title
+expect_status 0 bash ./run-benchmark thresholds update title
+expect_status 30 env MOCK_EMPTY=true bash ./run-benchmark thresholds check title
 rm -rf Benchmarks/Thresholds
+# A normal comparison must fail with missing references, not record replacements.
+expect_status 30 bash ./run-benchmark thresholds check title
+test ! -d Benchmarks/Thresholds
 expect_status 30 env MOCK_EMPTY=true bash ./run-benchmark thresholds update title
+
+# An increase in a higher-is-better metric must preserve the native improvement status.
+export BENCHMARK_CONFIGURATIONS='[{"name":"throughput","environment":{"MOCK_METRIC":"throughput"}}]'
+expect_status 0 env MOCK_VALUE=0 bash ./run-benchmark thresholds update title
+expect_status 4 env MOCK_STATUS=4 bash ./run-benchmark thresholds check title
 
 # A regression and an improvement must not cancel out or hide a command failure.
 export VALIDATE_THRESHOLDS=false

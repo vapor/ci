@@ -24,11 +24,11 @@ on:
       validate_thresholds:
         type: boolean
         default: false
-        description: "Require complete metric thresholds, positive instruction counters and checks for growth from zero."
-      thresholds_mode:
-        type: string
-        default: check
-        description: "check compares committed thresholds; record exports them; bootstrap records only when none exist."
+        description: "Require nonempty results and matching metric keys in committed thresholds."
+      record_thresholds:
+        type: boolean
+        default: false
+        description: "Export thresholds for review instead of comparing committed thresholds."
 permissions:
   contents: read
   id-token: write
@@ -127,31 +127,22 @@ jobs:
             esac
           }
 
-          # Inspect native threshold exports, without decoding the package's private baseline format.
-          validate_results() {
+          # Check coverage only. The benchmark package owns metric values and comparisons.
+          check_coverage() {
             local current=$1 reference=${2:-} file original count=0
-            zero_regressions=0
             while IFS= read -r -d '' file; do
               count=$((count + 1))
-              if ! jq -e 'type == "object" and length > 0 and
-                all(.[]; type == "number" and . >= 0 and floor == .) and
-                (if has("instructions") then .instructions > 0 else true end)' "$file" >/dev/null; then
-                echo "Invalid or unavailable metrics in ${file}"
+              if ! jq -e 'type == "object" and length > 0' "$file" >/dev/null; then
+                echo "Missing metric results in ${file}"
                 return 30
               fi
               if [[ -n "$reference" ]]; then
                 original="${reference}/${file#"${current}/"}"
                 if [[ ! -f "$original" ]] || ! jq -e --slurpfile current "$file" '
-                  type == "object" and keys == ($current[0] | keys) and
-                  all(.[]; type == "number" and . >= 0 and floor == .) and
-                  (if has("instructions") then .instructions > 0 else true end)
+                  type == "object" and keys == ($current[0] | keys)
                 ' "$original" >/dev/null; then
                   echo "Missing or incompatible thresholds: ${original}"
                   return 30
-                fi
-                if jq -e --slurpfile current "$file" 'to_entries | any(.[]; .value == 0 and $current[0][.key] > 0)' "$original" >/dev/null; then
-                  echo "Regression from a zero threshold: ${original}"
-                  zero_regressions=1
                 fi
               fi
             done < <(find "$current" -type f -name '*.p90.json' -print0)
@@ -184,14 +175,11 @@ jobs:
               "${command[@]}" baseline "$operation" "$baseline" "$@"
             elif [[ "$operation" == update ]]; then
               "${command[@]}" thresholds update "$baseline" --path "$thresholds" "$@"
-              if [[ "$validate" == true ]]; then validate_results "$thresholds"; fi
+              if [[ "$validate" == true ]]; then check_coverage "$thresholds"; fi
             else
-              zero_regressions=0
               if [[ "$validate" == true ]]; then
                 current=$(mktemp -d)
-                if "${command[@]}" thresholds update "$baseline" --path "$current" && validate_results "$current" "$thresholds"; then
-                  if [[ "$zero_regressions" == 1 ]]; then record_status 2; fi
-                else
+                if ! ("${command[@]}" thresholds update "$baseline" --path "$current" && check_coverage "$current" "$thresholds"); then
                   record_status 30
                   rm -rf "$current"
                   continue
@@ -285,25 +273,6 @@ jobs:
           ref: "${{ steps.commit-info.outputs.ref }}"
           fetch-depth: 0
 
-      - name: Select threshold operation
-        id: threshold-operation
-        env:
-          MODE: ${{ inputs.thresholds_mode }}
-        run: |
-          case "${MODE}" in
-            check) RECORD=false ;;
-            record) RECORD=true ;;
-            bootstrap)
-              if [[ -n "$(find Benchmarks/Thresholds -name '*.p90.json' -print -quit 2>/dev/null)" ]]; then
-                RECORD=false
-              else
-                RECORD=true
-              fi
-              ;;
-            *) echo "Unknown thresholds_mode: ${MODE}" >&2; exit 1 ;;
-          esac
-          echo "record=${RECORD}" >> "${GITHUB_OUTPUT}"
-
       - name: Configure git
         run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
 
@@ -332,7 +301,7 @@ jobs:
             | tee -a benchmark.md
 
       - name: "Compare ${{ steps.commit-info.outputs.title }} against thresholds"
-        if: steps.threshold-operation.outputs.record != 'true'
+        if: ${{ !inputs.record_thresholds }}
         id: comparison
         env:
           TITLE: ${{ steps.commit-info.outputs.title }}
@@ -350,7 +319,7 @@ jobs:
           set -e
 
       - name: Record thresholds for review
-        if: steps.threshold-operation.outputs.record == 'true'
+        if: inputs.record_thresholds
         env:
           TITLE: ${{ steps.commit-info.outputs.title }}
         run: |
@@ -358,7 +327,7 @@ jobs:
           echo 'Thresholds were recorded on this runner. Download the benchmark-thresholds artifact, review the values, and commit them before enabling threshold checks.' > comparison.md
 
       - name: Upload recorded thresholds
-        if: steps.threshold-operation.outputs.record == 'true'
+        if: inputs.record_thresholds
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: benchmark-thresholds
@@ -377,7 +346,7 @@ jobs:
       - name: Construct result comment
         env:
           MD_LINK: ${{ steps.commit-info.outputs.md_link }}
-          STATUS: ${{ steps.threshold-operation.outputs.record == 'true' && 'recorded' || steps.comparison.outputs.exit-status }}
+          STATUS: ${{ inputs.record_thresholds && 'recorded' || steps.comparison.outputs.exit-status }}
         run: |
           echo "## [Benchmark](${RUN_LINK}) Report for ${MD_LINK}" | tee -a comment.md
           case "${STATUS}" in
@@ -421,7 +390,7 @@ jobs:
           fi
 
       - name: Update commit status
-        if: steps.commit-info.outputs.pr_number != '' && steps.threshold-operation.outputs.record != 'true'
+        if: steps.commit-info.outputs.pr_number != '' && !inputs.record_thresholds
         env:
           STATUS: ${{ steps.comparison.outputs.exit-status }}
           SHA: ${{ steps.commit-info.outputs.sha }}
@@ -444,7 +413,7 @@ jobs:
             -d "${BODY}"
 
       - name: Exit with correct status
-        if: steps.threshold-operation.outputs.record != 'true'
+        if: ${{ !inputs.record_thresholds }}
         env:
           STATUS: ${{ steps.comparison.outputs.exit-status }}
         run: exit "${STATUS}"

@@ -13,8 +13,8 @@ need only the optional `sha` input. Additional inputs are opt-in:
 | `swift_image` | `swift:noble` | Pin the compiler/container used for measurements. |
 | `configurations` | `[{}]` | JSON array of named configurations; see below. |
 | `environment` | `{}` | JSON object of string-valued environment variables shared by all configurations. |
-| `validate_thresholds` | `false` | Require complete metric thresholds, positive instruction counters and checks for growth from zero. |
-| `thresholds_mode` | `check` | `check` compares committed thresholds; `record` exports replacements; `bootstrap` records only when no `*.p90.json` files exist under `Benchmarks/Thresholds`. |
+| `validate_thresholds` | `false` | Require nonempty results and matching metric keys in committed thresholds. |
+| `record_thresholds` | `false` | Export thresholds for review instead of comparing committed thresholds. |
 
 ### Separate configurations
 
@@ -32,7 +32,6 @@ with:
     ]
   environment: '{"NIO_SINGLETON_GROUP_LOOP_COUNT":"2"}'
   validate_thresholds: true
-  thresholds_mode: bootstrap
 ```
 
 Each configuration accepts:
@@ -55,19 +54,18 @@ runner architecture and configuration/environment select separate build caches.
 
 ### Thresholds and reports
 
-Recording runs upload a `benchmark-thresholds` artifact and explicitly report that
-no comparison was performed. They do not set a successful performance commit
-status. A human reviews and commits the generated files; bootstrap callers then
-switch to checking automatically. Explicit `record` runs support later refreshes.
-No thresholds are automatically committed or approved.
+Set `record_thresholds: true` to generate initial thresholds or refresh them on the
+benchmark runner. Recording runs upload a `benchmark-thresholds` artifact and
+report that no comparison was performed; they do not set a performance commit
+status. Review and commit the generated files, then run with the default `false`
+to compare against them. Missing thresholds never trigger automatic recording.
 
 With `validate_thresholds`, the workflow inspects native threshold exports before
 comparison. Every exported fixture must have the same metric keys in the committed
-reference. Values must be nonnegative integers, instruction counters must be
-positive, and growth from a zero reference is a regression. Missing results or
-incompatible references fail the check. This option does not translate filenames;
-benchmark names and tags must be compatible with the benchmark package's native
-threshold reader and GitHub artifact filenames.
+reference. Missing results or incompatible references fail the check. Metric values,
+direction and tolerances are interpreted by the benchmark package. This coverage
+check does not add comparison rules or validate hardware counters. Benchmark names
+and tags must work with the native threshold reader and GitHub artifact filenames.
 
 Full markdown reports are uploaded as `benchmark-reports`. PR comment sections
 are capped to keep large suites within GitHub's comment size limit. A caller using
