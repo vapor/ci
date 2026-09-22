@@ -9,11 +9,34 @@ on:
         type: string
         required: false
         description: "The commit SHA to run the benchmarks against. Will use current ref if not provided."
+      swift_image:
+        type: string
+        default: swift:noble
+        description: "The Swift container image used for builds and measurements."
+      configurations:
+        type: string
+        default: '[{}]'
+        description: "JSON array of named configurations with build, build_configuration, swift_flags and environment fields."
+      environment:
+        type: string
+        default: '{}'
+        description: "JSON object of environment variables applied to every configuration."
+      validate_thresholds:
+        type: boolean
+        default: false
+        description: "Require nonempty results and matching metric keys in committed thresholds."
+      record_thresholds:
+        type: boolean
+        default: false
+        description: "Export thresholds for review instead of comparing committed thresholds."
 permissions:
   contents: read
   id-token: write
 env:
   RUN_LINK: "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+  BENCHMARK_CONFIGURATIONS: ${{ inputs.configurations }}
+  BENCHMARK_ENVIRONMENT: ${{ inputs.environment }}
+  VALIDATE_THRESHOLDS: ${{ inputs.validate_thresholds }}
   CHECK_NAME: "benchmark / benchmark-vs-thresholds"
 
 jobs:
@@ -21,7 +44,7 @@ jobs:
     # https://runs-on.com/features/custom-runners/
     runs-on: runs-on=${{ github.run_id }}/runner=2cpu-4ram
     container:
-      image: swift:noble
+      image: ${{ inputs.swift_image }}
       options: --privileged
     
     env:
@@ -42,6 +65,146 @@ jobs:
       - name: Install jemalloc, zstd, curl and jq
         run: |
           apt-get update -q && apt-get install -yq libjemalloc-dev zstd curl jq
+
+      - name: Configure benchmark command
+        id: benchmark-configuration
+        run: |
+          cat > "${RUNNER_TEMP}/run-benchmark" <<'BENCHMARK_SCRIPT'
+          #!/usr/bin/env bash
+          set -euo pipefail
+
+          # Unnamed configuration preserves the original single-run command and paths.
+          configurations=${BENCHMARK_CONFIGURATIONS:-'[{}]'}
+          environment=${BENCHMARK_ENVIRONMENT:-'{}'}
+          validate=${VALIDATE_THRESHOLDS:-false}
+
+          if ! jq -e '
+            def slug: type == "string" and test("^[A-Za-z0-9][A-Za-z0-9_-]*$");
+            def environment: type == "object" and all(to_entries[];
+              (.key | test("^[A-Za-z_][A-Za-z0-9_]*$")) and
+              (.value | type == "string" and (contains("\u0000") | not)));
+            type == "array" and length > 0 and
+            all(.[]; type == "object" and
+              ((keys - ["name", "build", "build_configuration", "swift_flags", "environment"]) | length == 0) and
+              ((.name // "") | . == "" or slug) and
+              ((.build // .name // "") | . == "" or slug) and
+              ((.build_configuration // "release") | . == "debug" or . == "release") and
+              ((.swift_flags // []) | type == "array" and all(.[]; type == "string" and (contains("\u0000") | not))) and
+              ((.environment // {}) | environment)) and
+            (length == 1 or all(.[]; (.name // "") != "")) and
+            ((map(.name // "") | unique | length) == length) and
+            (group_by(.build // .name // "") | all(.[]; (map(.swift_flags // []) | unique | length) == 1))
+          ' <<< "$configurations" >/dev/null; then
+            echo 'Invalid benchmark configurations: use unique names, debug/release builds and identical Swift flags for shared build directories.' >&2
+            exit 30
+          fi
+          if ! jq -e 'type == "object" and all(to_entries[];
+            (.key | test("^[A-Za-z_][A-Za-z0-9_]*$")) and
+            (.value | type == "string" and (contains("\u0000") | not)))' <<< "$environment" >/dev/null; then
+            echo 'Benchmark environment must map variable names to strings.' >&2
+            exit 30
+          fi
+          if [[ "${1:-}" == --validate ]]; then exit 0; fi
+
+          category=$1
+          operation=$2
+          title=$3
+          shift 3
+          case "${category}/${operation}" in
+            baseline/update|baseline/read|thresholds/update|thresholds/check) ;;
+            *) echo 'Unsupported benchmark operation.' >&2; exit 30 ;;
+          esac
+
+          regressions=0
+          improvements=0
+          failure=0
+          record_status() {
+            case "$1" in
+              0) ;;
+              1) regressions=1; improvements=1 ;;
+              2) regressions=1 ;;
+              4) improvements=1 ;;
+              *) failure=$1 ;;
+            esac
+          }
+
+          # Check coverage only. The benchmark package owns metric values and comparisons.
+          check_coverage() {
+            local current=$1 reference=${2:-} file original count=0
+            while IFS= read -r -d '' file; do
+              count=$((count + 1))
+              if ! jq -e 'type == "object" and length > 0' "$file" >/dev/null; then
+                echo "Missing metric results in ${file}"
+                return 30
+              fi
+              if [[ -n "$reference" ]]; then
+                original="${reference}/${file#"${current}/"}"
+                if [[ ! -f "$original" ]] || ! jq -e --slurpfile current "$file" '
+                  type == "object" and keys == ($current[0] | keys)
+                ' "$original" >/dev/null; then
+                  echo "Missing or incompatible thresholds: ${original}"
+                  return 30
+                fi
+              fi
+            done < <(find "$current" -type f -name '*.p90.json' -print0)
+            if [[ "$count" == 0 ]]; then echo 'No benchmark results were exported.'; return 30; fi
+          }
+
+          while IFS= read -r configuration; do
+            name=$(jq -r '.name // ""' <<< "$configuration")
+            build=$(jq -r '.build // .name // ""' <<< "$configuration")
+            baseline=$title
+            thresholds=Benchmarks/Thresholds
+            if [[ -n "$name" ]]; then
+              baseline="ci-${name}"
+              thresholds="${thresholds}/${name}"
+              printf '\n## %s\n\n' "$name"
+            fi
+
+            command=(env)
+            while IFS= read -r -d '' variable; do command+=("$variable"); done < <(
+              jq -j --argjson common "$environment" '($common + (.environment // {})) | to_entries[] | .key + "=" + .value, "\u0000"' <<< "$configuration"
+            )
+            command+=(swift package -c release --disable-sandbox --package-path Benchmarks)
+            if [[ -n "$build" ]]; then command+=(--scratch-path "Benchmarks/.build/${build}"); fi
+            while IFS= read -r -d '' flag; do command+=("$flag"); done < <(
+              jq -j '.swift_flags[]? | ., "\u0000"' <<< "$configuration"
+            )
+            command+=(benchmark)
+            if [[ "$(jq -r '.build_configuration // "release"' <<< "$configuration")" == debug ]]; then
+              command+=(--benchmark-build-configuration debug)
+            fi
+
+            if [[ "$category" == baseline ]]; then
+              "${command[@]}" baseline "$operation" "$baseline" "$@"
+            elif [[ "$operation" == update ]]; then
+              "${command[@]}" thresholds update "$baseline" --path "$thresholds" "$@"
+              if [[ "$validate" == true ]]; then check_coverage "$thresholds"; fi
+            else
+              if [[ "$validate" == true ]]; then
+                current=$(mktemp -d)
+                if ! ("${command[@]}" thresholds update "$baseline" --path "$current" && check_coverage "$current" "$thresholds"); then
+                  record_status 30
+                  rm -rf "$current"
+                  continue
+                fi
+                rm -rf "$current"
+              fi
+              status=0
+              "${command[@]}" thresholds check "$baseline" --path "$thresholds" "$@" || status=$?
+              record_status "$status"
+            fi
+          done < <(jq -c '.[]' <<< "$configurations")
+
+          if [[ "$failure" != 0 ]]; then exit "$failure"; fi
+          if [[ "$regressions" == 1 && "$improvements" == 1 ]]; then exit 1; fi
+          if [[ "$regressions" == 1 ]]; then exit 2; fi
+          if [[ "$improvements" == 1 ]]; then exit 4; fi
+          BENCHMARK_SCRIPT
+          chmod +x "${RUNNER_TEMP}/run-benchmark"
+          "${RUNNER_TEMP}/run-benchmark" --validate
+          CONFIGURATION_HASH=$(printf '%s\n%s' "${BENCHMARK_CONFIGURATIONS}" "${BENCHMARK_ENVIRONMENT}" | sha256sum | cut -d ' ' -f 1)
+          echo "cache-key=${CONFIGURATION_HASH}" >> "${GITHUB_OUTPUT}"
 
       - name: Find commit info
         id: commit-info
@@ -122,30 +285,27 @@ jobs:
         uses: actions/cache@v6
         with:
           path: Benchmarks/.build
-          key: "swiftpm-benchmark-build-${{ runner.os }}-${{ steps.commit-info.outputs.sha }}"
-          restore-keys: "swiftpm-benchmark-build-${{ runner.os }}-"
+          key: "swiftpm-benchmark-v3-${{ runner.os }}-${{ runner.arch }}-${{ inputs.swift_image }}-${{ steps.benchmark-configuration.outputs.cache-key }}-${{ steps.commit-info.outputs.sha }}"
+          restore-keys: "swiftpm-benchmark-v3-${{ runner.os }}-${{ runner.arch }}-${{ inputs.swift_image }}-${{ steps.benchmark-configuration.outputs.cache-key }}-"
 
       - name: "Run benchmarks for ${{ steps.commit-info.outputs.title }}"
         env:
           TITLE: ${{ steps.commit-info.outputs.title }}
         run: |
-          swift package -c release --disable-sandbox \
-            --package-path Benchmarks \
-            benchmark baseline update \
+          "${RUNNER_TEMP}/run-benchmark" baseline update \
             "${TITLE}"
 
       - name: Read benchmark result
         env:
           TITLE: ${{ steps.commit-info.outputs.title }}
         run: |
-          swift package -c release --disable-sandbox \
-            --package-path Benchmarks \
-            benchmark baseline read \
+          "${RUNNER_TEMP}/run-benchmark" baseline read \
             "${TITLE}" \
             --format markdown \
             | tee -a benchmark.md
 
       - name: "Compare ${{ steps.commit-info.outputs.title }} against thresholds"
+        if: ${{ !inputs.record_thresholds }}
         id: comparison
         env:
           TITLE: ${{ steps.commit-info.outputs.title }}
@@ -155,32 +315,63 @@ jobs:
 
           # Disable 'set -e' to prevent the script from exiting on non-zero exit codes
           set +e
-          swift package -c release --disable-sandbox \
-            --package-path Benchmarks \
-            benchmark thresholds check \
+          "${RUNNER_TEMP}/run-benchmark" thresholds check \
            "${TITLE}" \
-            --path "Benchmarks/Thresholds/" \
             --format markdown \
             | tee -a comparison.md
           echo "exit-status=$?" >> "${GITHUB_OUTPUT}"
           set -e
 
+      - name: Record thresholds for review
+        if: inputs.record_thresholds
+        env:
+          TITLE: ${{ steps.commit-info.outputs.title }}
+        run: |
+          "${RUNNER_TEMP}/run-benchmark" thresholds update "${TITLE}"
+          echo 'Thresholds were recorded on this runner. Download the benchmark-thresholds artifact, review the values, and commit them before enabling threshold checks.' > comparison.md
+
+      - name: Upload recorded thresholds
+        if: inputs.record_thresholds
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: benchmark-thresholds
+          path: Benchmarks/Thresholds/
+          if-no-files-found: error
+
+      - name: Upload full benchmark reports
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: benchmark-reports
+          path: |
+            benchmark.md
+            comparison.md
+          if-no-files-found: error
+
       - name: Construct result comment
         env:
           MD_LINK: ${{ steps.commit-info.outputs.md_link }}
-          STATUS: ${{ steps.comparison.outputs.exit-status }}
+          STATUS: ${{ inputs.record_thresholds && 'recorded' || steps.comparison.outputs.exit-status }}
         run: |
           echo "## [Benchmark](${RUN_LINK}) Report for ${MD_LINK}" | tee -a comment.md
           case "${STATUS}" in
+              recorded) echo '**Thresholds recorded for review; no performance comparison was performed.**' | tee -a comment.md ;;
               0) echo '**✅ Pull request has no significant performance differences ✅**' | tee -a comment.md ;;
               1) echo '**❓ Pull request has significant performance differences 📊**' | tee -a comment.md ;;
               2) echo '**❌ Pull request has significant performance regressions 📉**' | tee -a comment.md ;;
               4) echo '**⚠️ Pull request has significant performance improvements 📈**' | tee -a comment.md ;;
-              *) echo '**🚫 Benchmark comparison failed with unknown exit code ${STATUS} 🚫**' | tee -a comment.md ;;
+              *) echo "**🚫 Benchmark comparison failed with unknown exit code ${STATUS} 🚫**" | tee -a comment.md ;;
           esac
 
-          printf '<details>\n  <summary>Click to expand comparison result</summary>\n\n%s\n\n</details>\n\n' "$(cat comparison.md)" | tee -a comment.md
-          printf '<details>\n  <summary>Click to expand benchmark result</summary>\n\n%s\n\n</details>\n\n' "$(cat benchmark.md)" | tee -a comment.md
+          # Large suites can exceed GitHub's 65,536-character comment limit.
+          # Keep full reports in the artifact.
+          for REPORT in comparison benchmark; do
+            jq -Rrs 'if length > 20000 then
+              .[:20000] + "\n\nReport truncated. Download benchmark-reports from the linked run for the full results.\n"
+              else . end' "${REPORT}.md" > "${REPORT}-comment.md"
+          done
+
+          printf '<details>\n  <summary>Click to expand comparison result</summary>\n\n%s\n\n</details>\n\n' "$(cat comparison-comment.md)" | tee -a comment.md
+          printf '<details>\n  <summary>Click to expand benchmark result</summary>\n\n%s\n\n</details>\n\n' "$(cat benchmark-comment.md)" | tee -a comment.md
 
       - name: Update comment in PR
         if: steps.commit-info.outputs.pr_number != ''
@@ -203,7 +394,7 @@ jobs:
           fi
 
       - name: Update commit status
-        if: steps.commit-info.outputs.pr_number != ''
+        if: steps.commit-info.outputs.pr_number != '' && !inputs.record_thresholds
         env:
           STATUS: ${{ steps.comparison.outputs.exit-status }}
           SHA: ${{ steps.commit-info.outputs.sha }}
@@ -226,6 +417,7 @@ jobs:
             -d "${BODY}"
 
       - name: Exit with correct status
+        if: ${{ !inputs.record_thresholds }}
         env:
           STATUS: ${{ steps.comparison.outputs.exit-status }}
         run: exit "${STATUS}"
