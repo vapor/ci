@@ -293,7 +293,7 @@ jobs:
         with:
           swift-version: ${{ matrix.swift-branch }}
           swift-build: ${{ matrix.swift-tag }}
-          update-sdk-modules: true
+          #update-sdk-modules: true
       - name: Check out code
         uses: actions/checkout@v7
       - name: Check Swift compatibility
