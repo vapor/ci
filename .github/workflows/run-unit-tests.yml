@@ -352,7 +352,7 @@ jobs:
           fi
       - name: Lint
         run: |
-          apt -q update && apt -yq install curl
+          apt-get -q update && apt-get -yq install curl
           curl -sL https://raw.githubusercontent.com/swiftlang/github-workflows/refs/heads/main/.github/workflows/scripts/check-swift-format.sh | bash
 
   musl:
