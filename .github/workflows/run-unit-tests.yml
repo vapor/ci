@@ -118,6 +118,9 @@ jobs:
     runs-on: ubuntu-latest
     container: swift:noble
     steps:
+      # https://github.com/actions/runner-images/issues/15108
+      - name: Temporary workaround for Github image bug
+        run: sudo sysctl -w fs.inotify.max_user_instances=1280 fs.inotify.max_user_watches=655360 vm.mmap_rnd_bits=28
       - name: Check out code
         uses: actions/checkout@v7
         with: { 'fetch-depth': 0 }
@@ -137,6 +140,9 @@ jobs:
     runs-on: ubuntu-latest
     container: swift:noble
     steps:
+      # https://github.com/actions/runner-images/issues/15108
+      - name: Temporary workaround for Github image bug
+        run: sudo sysctl -w fs.inotify.max_user_instances=1280 fs.inotify.max_user_watches=655360 vm.mmap_rnd_bits=28
       - name: Check out code
         uses: actions/checkout@v7
         with: { 'fetch-depth': 0 }
@@ -156,6 +162,9 @@ jobs:
     outputs:
       matrix: ${{ steps.gen-matrix.outputs.matrix }}
     steps:
+      # https://github.com/actions/runner-images/issues/15108
+      - name: Temporary workaround for Github image bug
+        run: sudo sysctl -w fs.inotify.max_user_instances=1280 fs.inotify.max_user_watches=655360 vm.mmap_rnd_bits=28
       - uses: actions/checkout@v7
       - id: check-swift-minus-2
         uses: vapor/ci/.github/actions/check-compatible-swift@15f8aff92cac6deb62a9f5891606a3167d76df28
@@ -195,6 +204,9 @@ jobs:
     container: ${{ matrix.swift-config.image }}
     timeout-minutes: 60
     steps:
+      # https://github.com/actions/runner-images/issues/15108
+      - name: Temporary workaround for Github image bug
+        run: sudo sysctl -w fs.inotify.max_user_instances=1280 fs.inotify.max_user_watches=655360 vm.mmap_rnd_bits=28
       - name: Install curl and zstd
         run: apt-get update -yq && apt-get install -y curl zstd
       - name: Check out code
@@ -338,6 +350,9 @@ jobs:
     container: swift:noble
     timeout-minutes: 5
     steps:
+      # https://github.com/actions/runner-images/issues/15108
+      - name: Temporary workaround for Github image bug
+        run: sudo sysctl -w fs.inotify.max_user_instances=1280 fs.inotify.max_user_watches=655360 vm.mmap_rnd_bits=28
       - name: Configure git
         run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Check out code
@@ -361,6 +376,9 @@ jobs:
     container: swift:noble
     timeout-minutes: 30
     steps:
+      # https://github.com/actions/runner-images/issues/15108
+      - name: Temporary workaround for Github image bug
+        run: sudo sysctl -w fs.inotify.max_user_instances=1280 fs.inotify.max_user_watches=655360 vm.mmap_rnd_bits=28
       - name: Check out code
         uses: actions/checkout@v7
       - name: Install linux dependencies
@@ -386,6 +404,9 @@ jobs:
     container: swift:noble
     timeout-minutes: 30
     steps:
+      # https://github.com/actions/runner-images/issues/15108
+      - name: Temporary workaround for Github image bug
+        run: sudo sysctl -w fs.inotify.max_user_instances=1280 fs.inotify.max_user_watches=655360 vm.mmap_rnd_bits=28
       - name: Check out code
         uses: actions/checkout@v7
       # NOTE: Portions of this workflow are adapted from
@@ -423,10 +444,17 @@ jobs:
         swift-version:
           - 6.2
           - 6.3
-          - 6.4.0
-    runs-on: ubuntu-latest
+          - 6.4.2
+        include:
+          - { swift-version: 6.2, runner-image: ubuntu-24.04 }
+          - { swift-version: 6.3, runner-image: ubuntu-24.04 }
+          - { swift-version: 6.4.2, runner-image: ubuntu-26.04 }
+    runs-on: ${{ matrix.runner-image }}
     timeout-minutes: 60
     steps:
+      # https://github.com/actions/runner-images/issues/15108
+      - name: Temporary workaround for Github image bug
+        run: sudo sysctl -w fs.inotify.max_user_instances=1280 fs.inotify.max_user_watches=655360 vm.mmap_rnd_bits=28
       - name: Ensure zstd is available
         run: sudo apt-get update -yq && sudo apt-get install -yq zstd
       - name: Check out code
