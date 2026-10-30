@@ -115,7 +115,7 @@ env:
 jobs:
   api-breakage:
     if: ${{ inputs.with_api_check && github.event_name == 'pull_request' && !github.event.pull_request.draft }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container: swift:resolute
     steps:
       - name: Check out code
@@ -134,7 +134,7 @@ jobs:
           swift package ${PACKAGE_ROOT} diagnose-api-breaking-changes --baseline-dir=${BASELINES} "origin/${GITHUB_BASE_REF}"
   api-breakage-baseline:
     if: ${{ inputs.with_api_check && github.event_name == 'push' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container: swift:resolute
     steps:
       - name: Check out code
@@ -152,7 +152,7 @@ jobs:
 
   determine-linux-matrix:
     if: ${{ !(github.event.pull_request.draft || false) }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       matrix: ${{ steps.gen-matrix.outputs.matrix }}
     steps:
@@ -191,7 +191,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.determine-linux-matrix.outputs.matrix) }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container: ${{ matrix.swift-config.image }}
     timeout-minutes: 60
     steps:
@@ -334,7 +334,7 @@ jobs:
 
   lint:
     if: ${{ inputs.with_linting }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container: swift:resolute
     timeout-minutes: 5
     steps:
@@ -357,7 +357,7 @@ jobs:
 
   musl:
     if: ${{ !(github.event.pull_request.draft || false) && inputs.with_musl }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container: swift:resolute
     timeout-minutes: 30
     steps:
@@ -382,7 +382,7 @@ jobs:
 
   wasm:
     if: ${{ !(github.event.pull_request.draft || false) && inputs.with_wasm }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container: swift:resolute
     timeout-minutes: 30
     steps:
